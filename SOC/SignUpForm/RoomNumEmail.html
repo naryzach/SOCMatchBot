@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style> 
+      p {
+        color: blue; 
+      }
+    </style> 
+  </head>
+  <body>
+    Hello Managers!<br><br>
+    
+    <b>PLEASE COMPLETE THIS WITHIN 24 HOURS</b> -- otherwise the default number of rooms will be used. Please enter the number of rooms that are availible for the upcoming clinic (<?= type?> Clinic on <?= date?> at <?= time?>) in cell <?= cell_ndx?> of the following spreadsheet:<br><br>
+    
+    <a href="<?= link_date ?>">Link to clinic dates sheet</a><br><br>
+
+    <!-- Please also <b>update the Physicians and the Chalk Talk Presenter in the Match List</b>. Do not make changes to providers -- any changes made to providers will be erased tomorrow:<br><br>
+
+    <a href="<?= link_match ?>">Link to clinic (preliminary) match list sheet</a><br><br> -->
+
+    <b>Other information:</b><br>
+    If providers need to change their responses, the form allows them to do so themselves. If a provider needs to cancel, please use the following form:<br><br>
+
+    <a href="<?= link_form_mod ?>">Link to cancellation form</a><br><br>
+
+    Additionally, below is the link for the Match Tracker if any changes need to be made to the final match list. <b>Cancellations that are made <mark>through the above form</mark> <u>before the match list is sent out</u> will be noted in the match tracker automatically</b>:<br><br>
+
+    <a href="<?= link_match_track ?>">Link to match tracker sheet</a><br><br>
+
+    <u>If you need edit access, please reply to this email with your non-UNR Gmail</u><br><br>
+
+    Thank you,<br>
+    The SOC scheduling assistant<br>
+  </body>
+</html>

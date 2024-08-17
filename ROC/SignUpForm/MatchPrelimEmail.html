@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style> 
+      p {
+        color: blue; 
+      }
+    </style> 
+  </head>
+  <body>
+    Hello Managers!<br><br>
+    
+    Here is the preliminary match list for the upcoming clinic (<?= type?> on <?= date?> at <?= time?>). Please <b>update the list within 24 hours</b>, after which the official list will be sent out.<br><br>
+    
+    <a href="<?= link ?>">Link to match list sheet</a><br><br>
+
+    <u>Any changes to providers will need to be manually accounted for in the Match Tracker</u>:<br><br> 
+
+    <a href="<?= link_track ?>">Link to match tracker sheet</a><br><br>
+
+    Furthermore, if you are a <u>DIME Manager or Lay Counselor</u>, please add the providers who will be attending to the respective box in the Match List as soon as possible. Additionally, here are the notes from the sign up form:<br><br>
+
+    <pre><?= sign_up_notes ?></pre><br><br>
+
+    <u>If you need edit access, please reply to this email with your non-UNR Gmail</u>.<br><br>
+
+    Thank you,<br>
+    The ROC scheduling assistant<br>
+  </body>
+</html>
