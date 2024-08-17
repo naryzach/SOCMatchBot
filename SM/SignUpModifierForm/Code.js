@@ -1,125 +1,111 @@
-// Sheet URLs
-const SHEET_SIGN = "1mKUVnFeCzI8x2w83rifGX9IA9VFliNTbiDLEMpynPoI"; // sheet associated with main form
-const FORM_MAIN = "1xcgvZ9eJDsPT_uuekd4o5XT2LWYhCS7sDhmhDj9IM5I" // ID of main form
-const NAMES_ID = "2069885822";
+// Sheet and Form IDs
+const SHEET_SIGN_ID = "1mKUVnFeCzI8x2w83rifGX9IA9VFliNTbiDLEMpynPoI";
+const FORM_MAIN_ID = "1xcgvZ9eJDsPT_uuekd4o5XT2LWYhCS7sDhmhDj9IM5I";
+const NAMES_ITEM_ID = "2069885822";
 
-// Sign up sheet indexing
-const SIGN_NAME_NDX = 2
-const SIGN_PTS_ALONE_NDX = 3
-const SIGN_ELECTIVE_NDX = 4
-const SIGN_SOC_POS_NDX = 5
-const SIGN_DIET_NDX = 6
-const SIGN_COMMENTS_NDX = 7
-const SIGN_DATE_NDX = 8
-const SIGN_CLINIC_DATE_NDX = 9
+// Sign up sheet column indices
+const SIGN_INDICES = {
+  NAME: 2,
+  PTS_ALONE: 3,
+  ELECTIVE: 4,
+  SOC_POS: 5,
+  DIET: 6,
+  COMMENTS: 7,
+  DATE: 8,
+  CLINIC_DATE: 9
+};
 
-// Match tracker sheet indexing
-const TRACK_LASTNAME_NDX = 1
-const TRACK_FIRSTNAME_NDX = 2
-const TRACK_SIGNUPS_NDX = 3
-const TRACK_MATCHES_NDX = 4
-const TRACK_NOSHOW_NDX = 5
-const TRACK_CXLLATE_NDX = 6
-const TRACK_CXLEARLY_NDX = 7
-const TRACK_DATE_NDX = 8
+// Match tracker sheet column indices
+const TRACK_INDICES = {
+  LASTNAME: 1,
+  FIRSTNAME: 2,
+  SIGNUPS: 3,
+  MATCHES: 4,
+  NOSHOW: 5,
+  CXLLATE: 6,
+  CXLEARLY: 7,
+  DATE: 8
+};
 
-// *** ---------------------------------- *** // 
-
-// Create a form submit installable trigger
-// using Apps Script.
+/**
+ * Creates form submit and time-based triggers for the active form.
+ * Checks if triggers are already set before creating new ones.
+ */
 function createTriggers() {
-  // Get the form object.
-  var form = FormApp.getActiveForm();
+  const form = FormApp.getActiveForm();
+  const currentTriggers = ScriptApp.getProjectTriggers();
 
-  // Check if triggers are already set 
-  var currentTriggers = ScriptApp.getProjectTriggers();
-  if(currentTriggers.length > 0) {
+  if (currentTriggers.length > 0) {
     Logger.log("Triggers already set.");
     return;
   }
 
-  // Create triggers
   ScriptApp.newTrigger("onFormSubmit").forForm(form).onFormSubmit().create();
   ScriptApp.newTrigger("updateNames").timeBased().everyHours(1).create();
 }
 
-// Remove triggers
+/**
+ * Removes all existing triggers for the current project.
+ */
 function discontinueTriggers() {
-  var triggers = ScriptApp.getProjectTriggers();
-  for (var i = 0; i < triggers.length; i++) {
-    ScriptApp.deleteTrigger(triggers[i]);
-  }
+  ScriptApp.getProjectTriggers().forEach(trigger => ScriptApp.deleteTrigger(trigger));
 }
 
-// A function that is called by the form submit
-// trigger. The parameter e contains information
-// submitted by the user.
+/**
+ * Handles form submission events.
+ * Prevents resubmission and toggles cancellation status.
+ * @param {Object} e - The form submit event object.
+ */
 function onFormSubmit(e) {
-  var form = FormApp.getActiveForm();
-  var sheet = SpreadsheetApp.openById(SHEET_SIGN).getSheets()[0];
+  const form = FormApp.getActiveForm();
+  const sheet = SpreadsheetApp.openById(SHEET_SIGN_ID).getSheets()[0];
+  const formResponse = e.response;
+  const name = formResponse.getItemResponses()[0].getResponse();
   
-  // Get the response that was submitted.
-  var formResponse = e.response;
-  Logger.log(formResponse.getItemResponses()[0].getResponse()); // log name for error checking
+  Logger.log(name); // Log name for error checking
 
-  var descr = form.getDescription().split(";");
-  var date = descr[0];
-  let lastRow = sheet
-      .getRange(1, 1)
-      .getNextDataCell(SpreadsheetApp.Direction.DOWN)
-      .getRow();
+  const date = form.getDescription().split(";")[0];
+  const lastRow = sheet.getLastRow();
   
-  var itemResponses = formResponse.getItemResponses();
-  var name = itemResponses[0].getResponse();
+  const usedNames = sheet.getRange(2, SIGN_INDICES.NAME, lastRow - 1, 1).getValues().flat();
+  const usedDates = sheet.getRange(2, SIGN_INDICES.DATE, lastRow - 1, 1).getValues().flat();
 
-  // Prevent resubmission 
-  var usedNames = sheet.getRange(2, SIGN_NAME_NDX, lastRow-1).getValues();
-  var usedDates = sheet.getRange(2, SIGN_DATE_NDX, lastRow-1).getValues();
-  for(var i = 0; i < lastRow-1; i++) {
-    if (name == usedNames[i][0] && 
-        new Date(date).valueOf() == usedDates[i][0].valueOf()) {
-      Logger.log(name);
+  for (let i = 0; i < lastRow - 1; i++) {
+    if (name === usedNames[i] && new Date(date).valueOf() === usedDates[i].valueOf()) {
       Logger.log("Found sign up");
-      if (name.slice(-3) != "CXL") {
-        sheet.getRange(i + 2, SIGN_NAME_NDX).setValue(name + "CXL");
-      } else {
-        // Toggle cancelation
-        sheet.getRange(i + 2, SIGN_NAME_NDX).setValue(name.slice(0,-3));
-      }
-    } 
-  }
-  updateNames()
-}
-
-// Build the list of names from the sheet
-function updateNames () {
-  var form = FormApp.getActiveForm();
-  var form_main = FormApp.openById(FORM_MAIN);
-  var sheet_sign = SpreadsheetApp.openById(SHEET_SIGN).getSheets()[0];
-
-  var descr = form_main.getDescription();
-  var date = descr.split(";")[0];
-  var largeNameList = [];
-
-  form.setDescription(descr);
-
-  // Gather names of signups for current dated clinic
-  let lastRow = sheet_sign
-      .getRange(1, 1)
-      .getNextDataCell(SpreadsheetApp.Direction.DOWN)
-      .getRow();
-  var sign_dates = sheet_sign.getRange(2, SIGN_DATE_NDX, lastRow).getValues();
-  var sign_names = sheet_sign.getRange(2, SIGN_NAME_NDX, lastRow).getValues();
-
-  for(var i = 0; i < lastRow-1; i++) {
-    if (new Date(date).valueOf()  == sign_dates[i][0].valueOf()) {
-      largeNameList.push(sign_names[i][0]);
+      const cell = sheet.getRange(i + 2, SIGN_INDICES.NAME);
+      cell.setValue(cell.getValue().endsWith("CXL") ? name.slice(0, -3) : name + "CXL");
+      break;
     }
   }
 
-  var namesList = form.getItemById(NAMES_ID).asListItem();
+  updateNames();
+}
 
-  // Generate name options from Match Tracker
-  if (largeNameList.length == 0) largeNameList = ["None"]
-  namesList.setChoiceValues(largeNameList);
+/**
+ * Updates the list of names in the form based on the sign-up sheet.
+ * Filters names for the current clinic date.
+ */
+function updateNames() {
+  const form = FormApp.getActiveForm();
+  const formMain = FormApp.openById(FORM_MAIN_ID);
+  const sheetSign = SpreadsheetApp.openById(SHEET_SIGN_ID).getSheets()[0];
+
+  const date = formMain.getDescription().split(";")[0];
+  form.setDescription(formMain.getDescription());
+
+  const lastRow = sheetSign.getLastRow();
+  const signDates = sheetSign.getRange(2, SIGN_INDICES.DATE, lastRow - 1, 1).getValues().flat();
+  const signNames = sheetSign.getRange(2, SIGN_INDICES.NAME, lastRow - 1, 1).getValues().flat();
+
+  const currentDateValue = new Date(date).valueOf();
+  const largeNameList = signDates.reduce((acc, dateValue, index) => {
+    if (new Date(dateValue).valueOf() === currentDateValue) {
+      acc.push(signNames[index]);
+    }
+    return acc;
+  }, []);
+
+  const namesList = form.getItemById(NAMES_ITEM_ID).asListItem();
+  namesList.setChoiceValues(largeNameList.length > 0 ? largeNameList : ["None"]);
 }
