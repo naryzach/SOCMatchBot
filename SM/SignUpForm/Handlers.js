@@ -1,4 +1,25 @@
 /**
+ * Street Medicine (SM) Sign-Up Form Handlers
+ * 
+ * This script contains handler functions for managing the sign-up process,
+ * preliminary and final matching, and email communications for the Street Medicine program.
+ * It works in conjunction with Google Sheets and Forms to automate the scheduling process.
+ * 
+ * DEBUG Mode:
+ * When DEBUG is set to true:
+ * 1. All emails are sent to the Webmaster instead of their intended recipients.
+ * 2. The TRACKER sheet is not modified. Actions that would modify the sheet are logged instead.
+ * 3. Debug messages are logged to indicate when emails would be sent and sheets would be updated.
+ * 
+ * To run the script in normal mode, set DEBUG = false.
+ * 
+ * Important:
+ * - Ensure this file is used in conjunction with the main SM scheduling script
+ * - Update email recipients and content as needed for your specific SM program
+ * - Verify that all referenced spreadsheet IDs and ranges are correct
+ */
+
+/**
  * Sends sign-up email and updates the form for an upcoming clinic.
  * @param {GoogleAppsScript.Forms.Form} form - The Google Form to update.
  * @param {string} dateString - Formatted date string for the clinic.

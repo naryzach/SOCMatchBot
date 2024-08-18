@@ -1,4 +1,25 @@
 /**
+ * Student Outreach Clinic (SOC) Sign-Up Form Handlers
+ * 
+ * This script contains handler functions for managing the sign-up process,
+ * preliminary and final matching, and email communications for the Student Outreach Clinic program.
+ * It works in conjunction with Google Sheets and Forms to automate the scheduling process.
+ * 
+ * DEBUG Mode:
+ * When DEBUG is set to true:
+ * 1. All emails are sent to the Webmaster instead of their intended recipients.
+ * 2. The TRACKER sheet is not modified. Actions that would modify the sheet are logged instead.
+ * 3. Debug messages are logged to indicate when emails would be sent and sheets would be updated.
+ * 
+ * To run the script in normal mode, set DEBUG = false.
+ * 
+ * Important:
+ * - Ensure this file is used in conjunction with the main SOC scheduling script
+ * - Update email recipients and content as needed for your specific SOC program
+ * - Verify that all referenced spreadsheet IDs and ranges are correct
+ */
+
+/**
  * Handles the lead time for clinic sign-ups.
  * 
  * This function is called when it's time to open sign-ups for a clinic.

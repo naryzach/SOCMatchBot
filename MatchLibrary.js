@@ -1,3 +1,20 @@
+/**
+ * Match Library for Student Outreach Clinics
+ * 
+ * This script contains utility functions for managing student matches and information
+ * for various outreach clinic programs. It provides functionality for building name lists,
+ * finding student information, updating forms, and retrieving staff information.
+ * 
+ * The library works with multiple sheets:
+ * - Match tracker sheet: Contains student sign-up and match information
+ * - People sheet: Contains staff and management contact information
+ * 
+ * Important:
+ * - Ensure all sheet IDs and indices are up to date
+ * - This library is used by multiple clinic scripts, so changes may affect multiple programs
+ * - Verify that all referenced spreadsheet ranges and column indices are correct
+ */
+
 // Match tracker sheet
 const TRACK_INDEX = {
     LASTNAME: 1,

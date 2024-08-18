@@ -1,6 +1,23 @@
-// Need to update SHEET ID's with new instances (link new sheet to responses first)
-// Run createTriggers() after Match Tracker is updated
-// Update clinic dates for proper flow of automation
+/**
+ * SOC (Student Outreach Clinic) Sign-Up Form and Scheduling Script
+ * 
+ * This script manages the sign-up process, match list generation, and email communications
+ * for the Student Outreach Clinic. It interacts with Google Sheets and Forms to automate
+ * the scheduling process.
+ * 
+ * DEBUG Mode:
+ * When DEBUG is set to true:
+ * 1. All emails are sent to the Webmaster instead of their intended recipients.
+ * 2. The TRACKER sheet is not modified. Actions that would modify the sheet are logged instead.
+ * 3. Debug messages are logged to indicate when emails would be sent and sheets would be updated.
+ * 
+ * To run the script in normal mode, set DEBUG = false.
+ * 
+ * Important:
+ * - Update SHEET ID's with new instances (link new sheet to responses first)
+ * - Run createTriggers() after Match Tracker is updated
+ * - Update clinic dates for proper flow of automation
+ */
 
 const DEBUG = true;
 
@@ -572,7 +589,7 @@ function onFormSubmit(e) {
   if (!DEBUG) {
     sheets_tracker[nameArr[0]].getRange(nameArr[1] + 1, TRACK_INDEX.SIGNUPS).setValue(parseInt(tmp) + 1);
   } else {
-    Logger.log("DEBUG: Would update TRACKER sheet for " + name + ": Signups = " + (parseInt(tmp) + 1));
+    Logger.log(`DEBUG: Would update TRACKER sheet for ${name}: Signups = ${parseInt(tmp) + 1}`);
   }
 }
 

@@ -1,4 +1,25 @@
 /**
+ * Rural Outreach Clinic (ROC) Sign-Up Form Handlers
+ * 
+ * This script contains handler functions for managing the sign-up process,
+ * preliminary and final matching, and email communications for the Rural Outreach Clinic program.
+ * It works in conjunction with Google Sheets and Forms to automate the scheduling process.
+ * 
+ * DEBUG Mode:
+ * When DEBUG is set to true:
+ * 1. All emails are sent to the Webmaster instead of their intended recipients.
+ * 2. The TRACKER sheet is not modified. Actions that would modify the sheet are logged instead.
+ * 3. Debug messages are logged to indicate when emails would be sent and sheets would be updated.
+ * 
+ * To run the script in normal mode, set DEBUG = false.
+ * 
+ * Important:
+ * - Ensure this file is used in conjunction with the main ROC scheduling script
+ * - Update email recipients and content as needed for your specific ROC program
+ * - Verify that all referenced spreadsheet IDs and ranges are correct
+ */
+
+/**
  * Handles the sign-up process for a clinic.
  * Updates the form, sends sign-up emails, and manages form responses.
  * @param {GoogleAppsScript.Forms.Form} form - The Google Form to update.

@@ -1,6 +1,23 @@
-// Need to update SHEET ID's with new instances (link new sheet to responses first)
-// Run createTriggers() after Match Tracker is updated
-// Update clinic dates for proper flow of automation
+/**
+ * Rural Outreach Clinic (ROC) Sign-Up Form and Scheduling Script
+ * 
+ * This script manages the sign-up process, match list generation, and email communications
+ * for the Rural Outreach Clinic program. It interacts with Google Sheets and Forms to automate
+ * the scheduling process for rural outreach clinics.
+ * 
+ * DEBUG Mode:
+ * When DEBUG is set to true:
+ * 1. All emails are sent to the Webmaster instead of their intended recipients.
+ * 2. The TRACKER sheet is not modified. Actions that would modify the sheet are logged instead.
+ * 3. Debug messages are logged to indicate when emails would be sent and sheets would be updated.
+ * 
+ * To run the script in normal mode, set DEBUG = false.
+ * 
+ * Important:
+ * - Update SHEET ID's and FORM ID's with new instances as needed
+ * - Run createTriggers() after updating the Match Tracker or changing form IDs
+ * - Ensure clinic dates in the DATES sheet are up to date for proper automation flow
+ */
 
 const DEBUG = true;
 
