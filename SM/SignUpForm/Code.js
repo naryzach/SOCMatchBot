@@ -1,5 +1,7 @@
 // Constants for Google Sheets and Forms
 
+const DEBUG = true;
+
 // Sheet and Form IDs
 const SHEETS_ID = {
   TRACKER: "10e68w1DkTm4kdXJIcMUeIUH5_KFP1uUgKv5SB5RHXDU",  // Match tracker
@@ -199,12 +201,16 @@ function sendSignUpEmail(form, dateString, clinicDate, timeZone, links) {
   htmlBody.feedback_email = GET_INFO("Webmaster", "email");
 
   MailApp.sendEmail({
-    to: GET_INFO("ClassLists", "email"),
+    to: DEBUG ? GET_INFO("Webmaster", "email") : GET_INFO("ClassLists", "email"),
     subject: `Sign up for Street Medicine Clinic on ${dateString}`,
     replyTo: GET_INFO("SMManager", "email"),
     htmlBody: htmlBody.evaluate().getContent(),
     name: "Street Medicine Scheduling Assistant"
   });
+
+  if (DEBUG) {
+    Logger.log(`DEBUG: Sign-up email sent to Webmaster instead of class lists for clinic on ${dateString}`);
+  }
 }
 
 /**
@@ -235,13 +241,17 @@ function sendFinalMatchList(dateString, clinicDate) {
   htmlBody.feedback_email = GET_INFO("Webmaster", "email");
 
   MailApp.sendEmail({
-    to: GET_INFO("ClassLists", "email"),
+    to: DEBUG ? GET_INFO("Webmaster", "email") : GET_INFO("ClassLists", "email"),
     subject: `Match list for Street Medicine Clinic on ${dateString}`,
     replyTo: GET_INFO("SMManager", "email"),
     htmlBody: htmlBody.evaluate().getContent(),
     attachments: [file.getAs(MimeType.PDF)],
     name: "Street Medicine Scheduling Assistant"
   });
+
+  if (DEBUG) {
+    Logger.log(`DEBUG: Final match list email sent to Webmaster instead of class lists for clinic on ${dateString}`);
+  }
 }
 
 /**
@@ -381,9 +391,13 @@ function updateMatchList(date, numRooms) {
     const trackSheet = sheetsTrack[nameArr[0]];
     const trackRow = nameArr[1] + 1;
     
-    const matchesCell = trackSheet.getRange(trackRow, TRACK_INDEX.MATCHES);
-    matchesCell.setValue((matchesCell.getValue() || 0) + 1);
-    trackSheet.getRange(trackRow, TRACK_INDEX.DATE).setValue(date);
+    if (!DEBUG) {
+      const matchesCell = trackSheet.getRange(trackRow, TRACK_INDEX.MATCHES);
+      matchesCell.setValue((matchesCell.getValue() || 0) + 1);
+      trackSheet.getRange(trackRow, TRACK_INDEX.DATE).setValue(date);
+    } else {
+      Logger.log(`DEBUG: Would update TRACKER sheet for ${name}: Matches incremented, Date set to ${date}`);
+    }
 
     const nameRowIndex = signNames.findIndex(row => row[0] === name) + 2;
     const transport = sheetSign.getRange(nameRowIndex, SIGN_INDEX.ELECTIVE).getValue();
@@ -406,12 +420,16 @@ function updateMatchList(date, numRooms) {
   
   const emailHtml = htmlBody.evaluate().getContent();
   MailApp.sendEmail({
-    to: GET_INFO("SMManager", "email"),
+    to: DEBUG ? GET_INFO("Webmaster", "email") : GET_INFO("SMManager", "email"),
     subject: "Street Medicine Match List (Prelim) and Notes from Sign-ups",
     replyTo: GET_INFO("Webmaster", "email"),
     htmlBody: emailHtml,
     name: "SM Scheduling Assistant"
   });
+
+  if (DEBUG) {
+    Logger.log(`DEBUG: Preliminary match list email sent to Webmaster instead of SM Manager for clinic on ${dateString}`);
+  }
 
   FormApp.getActiveForm().deleteAllResponses();
 }
@@ -543,7 +561,12 @@ function updateSignUpCounter(sheets, name) {
   const [sheetIndex, rowIndex] = nameArr;
   const cell = sheets[sheetIndex].getRange(rowIndex + 1, TRACK_INDEX.SIGNUPS);
   const currentValue = cell.getValue() || 0;
-  cell.setValue(currentValue + 1);
+  
+  if (!DEBUG) {
+    cell.setValue(currentValue + 1);
+  } else {
+    Logger.log(`DEBUG: Would update TRACKER sheet for ${name}: Signups incremented from ${currentValue} to ${currentValue + 1}`);
+  }
 }
 
 /**

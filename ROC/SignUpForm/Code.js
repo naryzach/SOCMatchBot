@@ -2,6 +2,8 @@
 // Run createTriggers() after Match Tracker is updated
 // Update clinic dates for proper flow of automation
 
+const DEBUG = false;
+
 // Sheet IDs
 const SHEETS_ID = {
   TRACKER: "10e68w1DkTm4kdXJIcMUeIUH5_KFP1uUgKv5SB5RHXDU",  // Match tracker
@@ -35,8 +37,9 @@ const SIGN_INDEX = {
   FOLLOW: 6,
   CARPOOL: 7,
   COMMENTS: 8,
-  DATE: 9,
-  CLINIC_TYPE: 10
+  ELECTIVE: 9,
+  DATE: 10,
+  CLINIC_TYPE: 11
 };
 
 // Match tracker sheet
@@ -88,9 +91,6 @@ const PEOPLE_INDEX = {
 
 // *** ---------------------------------- *** // 
 
-/**
- * Creates form submit installable triggers.
- */
 /**
  * Creates form submit and time-based triggers if they don't already exist.
  */
@@ -220,12 +220,16 @@ function handleSignUp(form, dateString, clinicDate, timeZone, clinicInfo, links)
   const emailHtml = htmlBody.evaluate().getContent();
 
   MailApp.sendEmail({
-    to: GET_INFO("ClassLists", "email"),
+    to: DEBUG ? GET_INFO("Webmaster", "email") : GET_INFO("ClassLists", "email"),
     subject: `Sign up for ROC on ${dateString}`,
     replyTo: GET_INFO("ROCManager", "email"),
     htmlBody: emailHtml,
     name: "ROC Scheduling Assistant"
   });
+
+  if (DEBUG) {
+    Logger.log(`DEBUG: Sign-up email sent to Webmaster instead of class lists for ROC on ${dateString}`);
+  }
 }
 
 /**
@@ -261,13 +265,17 @@ function handleFinalMatch(dateString, clinicDate, clinicInfo) {
   const emailHtml = htmlBody.evaluate().getContent();
 
   MailApp.sendEmail({
-    to: GET_INFO("ClassLists", "email"),
+    to: DEBUG ? GET_INFO("Webmaster", "email") : GET_INFO("ClassLists", "email"),
     subject: `Match list for ROC on ${dateString}`,
     replyTo: GET_INFO("ROCManager", "email"),
     htmlBody: emailHtml,
     attachments: [file.getAs(MimeType.PDF)],
     name: "ROC Scheduling Assistant"
   });
+
+  if (DEBUG) {
+    Logger.log(`DEBUG: Final match list email sent to Webmaster instead of class lists for ROC on ${dateString}`);
+  }
 }
 
 /**
@@ -318,7 +326,11 @@ function updateMatchList(date, type, num_rooms, address) {
         // Update the sign up counter if cancellation
         const cxlEarlyCell = sheetsTrack[newNameArr[0]].getRange(newNameArr[1] + 1, TRACK_INDEX.CXLEARLY);
         const cxlEarlyValue = cxlEarlyCell.getValue() || 0;
-        cxlEarlyCell.setValue(cxlEarlyValue + 1);
+        if (!DEBUG) {
+          cxlEarlyCell.setValue(cxlEarlyValue + 1);
+        } else {
+          Logger.log(`DEBUG: Would update TRACKER sheet for ${newName}: CXLEARLY incremented from ${cxlEarlyValue} to ${cxlEarlyValue + 1}`);
+        }
       }
       return;
     }
@@ -374,12 +386,12 @@ function updateMatchList(date, type, num_rooms, address) {
   Logger.log("Sorted match list:", sortedMatchList);
 
   // Clear Match List Sheet
-  const clearRange = sheet_match.getRange(MATCH_INDEX.NAMES, 1, 25, 3);
+  const clearRange = sheetMatch.getRange(MATCH_INDEX.NAMES, 1, 25, 3);
   clearRange.clearContent().setBorder(false, false, false, false, false, false);
 
   // Clear specific fields
   const fieldsToClean = [MATCH_INDEX.CHALK, MATCH_INDEX.INTERPRET, MATCH_INDEX.SHADOW, MATCH_INDEX.PHYS, MATCH_INDEX.VOLUNT];
-  fieldsToClean.forEach(field => sheet_match.getRange(field).clearContent());
+  fieldsToClean.forEach(field => sheetMatch.getRange(field).clearContent());
 
   // Update Match List Sheet header
   const clinicInfo = {
@@ -398,10 +410,10 @@ function updateMatchList(date, type, num_rooms, address) {
     Logger.log("Problem with clinic type");
   }
 
-  sheet_match.getRange(MATCH_INDEX.TITLE).setValue(clinicInfo.title);
-  sheet_match.getRange(MATCH_INDEX.DATE).setValue(date);
-  sheet_match.getRange(MATCH_INDEX.TIME).setValue(clinicInfo.time);
-  sheet_match.getRange(MATCH_INDEX.ADDRESS).setValue(address);
+  sheetMatch.getRange(MATCH_INDEX.TITLE).setValue(clinicInfo.title);
+  sheetMatch.getRange(MATCH_INDEX.DATE).setValue(date);
+  sheetMatch.getRange(MATCH_INDEX.TIME).setValue(clinicInfo.time);
+  sheetMatch.getRange(MATCH_INDEX.ADDRESS).setValue(address);
 
   // Update Match List Sheet
   let firstName, lastName, nameRowIndex;
@@ -409,10 +421,10 @@ function updateMatchList(date, type, num_rooms, address) {
   const rollOverProviders = [];
 
   Logger.log(`Number of rooms: ${num_rooms}`);
-  Logger.log(`Number of providers: ${matchList.length}`);
+  Logger.log(`Number of providers: ${sortedMatchList.length}`);
 
   num_rooms -= 1; // DIME takes a room space
-  const numSlots = Math.min(matchList.length, num_rooms);
+  const numSlots = Math.min(sortedMatchList.length, num_rooms);
 
   Logger.log(`Number of slots: ${numSlots}`);
 
@@ -421,35 +433,35 @@ function updateMatchList(date, type, num_rooms, address) {
     // Find the index of the name on the sign-up sheet
     nameRowIndex = 2;
     for (let j = 0; j < lastRow - 1; j++) {
-      if (date.valueOf() == sign_dates[j][0].valueOf() && sign_names[j][0] == matchList[i]) {
+      if (date.valueOf() == signDates[j][0].valueOf() && signNames[j][0] == sortedMatchList[i]) {
         nameRowIndex += j; // List index offset from sheet
         break;
       }
     }
-    const ptsAlone = sheet_sign.getRange(nameRowIndex, SIGN_INDEX.PTS_ALONE).getValue();
+    const ptsAlone = sheetSign.getRange(nameRowIndex, SIGN_INDEX.PTS_ALONE).getValue();
 
     if (ptsAlone === "Yes") {
-      actuallyMatched.push(matchList[i]);
-      const nameArr = findCellByName(matchList[i]);
-      firstName = sheets_track[nameArr[0]].getRange(nameArr[1] + 1, TRACK_INDEX.FIRSTNAME).getValue();
-      lastName = sheets_track[nameArr[0]].getRange(nameArr[1] + 1, TRACK_INDEX.LASTNAME).getValue();
+      actuallyMatched.push(sortedMatchList[i]);
+      const nameArr = findCellByName(sortedMatchList[i]);
+      firstName = sheetsTrack[nameArr[0]].getRange(nameArr[1] + 1, TRACK_INDEX.FIRSTNAME).getValue();
+      lastName = sheetsTrack[nameArr[0]].getRange(nameArr[1] + 1, TRACK_INDEX.LASTNAME).getValue();
       
       // Update match list sheet with provider information
-      sheet_match.getRange(i + MATCH_INDEX.NAMES, 1).setValue(`Room ${i + 1}`);
-      sheet_match.getRange(i + MATCH_INDEX.NAMES, 2).setValue(`${firstName} ${lastName}, ${getYearTag(nameArr[0])}`);
-      sheet_match.getRange(i + MATCH_INDEX.NAMES, 3).setValue("_____________________________________________\n_____________________________________________\n_____________________________________________");
-      sheet_match.getRange(i + MATCH_INDEX.NAMES, 1, 1, 3).setBorder(true, true, true, true, true, true);
+      sheetMatch.getRange(i + MATCH_INDEX.NAMES, 1).setValue(`Room ${i + 1}`);
+      sheetMatch.getRange(i + MATCH_INDEX.NAMES, 2).setValue(`${firstName} ${lastName}, ${getYearTag(nameArr[0])}`);
+      sheetMatch.getRange(i + MATCH_INDEX.NAMES, 3).setValue("_____________________________________________\n_____________________________________________\n_____________________________________________");
+      sheetMatch.getRange(i + MATCH_INDEX.NAMES, 1, 1, 3).setBorder(true, true, true, true, true, true);
     } else {
-      rollOverProviders.push(matchList.splice(i, 1)[0]);
+      rollOverProviders.push(sortedMatchList.splice(i, 1)[0]);
       i--; // Adjust index since we removed an item
     }
-    if (matchList.length <= (i+1)) {num_slots = matchList.length; break;}
+    if (sortedMatchList.length <= (i+1)) {numSlots = sortedMatchList.length; break;}
   }
 
   Logger.log(`Roll over providers: ${rollOverProviders}`);
 
   // Fill the second room spot
-  const matchListP2 = rollOverProviders.concat(matchList.slice(numSlots));
+  const matchListP2 = rollOverProviders.concat(sortedMatchList.slice(numSlots));
   const numSlots2 = Math.min(matchListP2.length, numSlots);
 
   Logger.log(`Number of slots (for 2nd pass): ${numSlots2}`);
@@ -458,25 +470,25 @@ function updateMatchList(date, type, num_rooms, address) {
   for (let i = 0; i < numSlots2; i++) {
     actuallyMatched.push(matchListP2[i]);
     const nameArr = findCellByName(matchListP2[i]);
-    firstName = sheets_track[nameArr[0]].getRange(nameArr[1] + 1, TRACK_INDEX.FIRSTNAME).getValue();
-    lastName = sheets_track[nameArr[0]].getRange(nameArr[1] + 1, TRACK_INDEX.LASTNAME).getValue();
+    firstName = sheetsTrack[nameArr[0]].getRange(nameArr[1] + 1, TRACK_INDEX.FIRSTNAME).getValue();
+    lastName = sheetsTrack[nameArr[0]].getRange(nameArr[1] + 1, TRACK_INDEX.LASTNAME).getValue();
 
-    const prevName = sheet_match.getRange(i + MATCH_INDEX.NAMES, 2).getValue();
-    sheet_match.getRange(i + MATCH_INDEX.NAMES, 2).setValue(`${prevName}\n${firstName} ${lastName}, ${getYearTag(nameArr[0])}`);
+    const prevName = sheetMatch.getRange(i + MATCH_INDEX.NAMES, 2).getValue();
+    sheetMatch.getRange(i + MATCH_INDEX.NAMES, 2).setValue(`${prevName}\n${firstName} ${lastName}, ${getYearTag(nameArr[0])}`);
   }
 
   Logger.log(`Match list part 2: ${matchListP2}`);
 
   // Add post-bac spaces
   for (let i = 0; i < numSlots + 1; i++) { // Add room back for DIME
-    const prevName = sheet_match.getRange(i + MATCH_INDEX.NAMES, 2).getValue();
-    sheet_match.getRange(i + MATCH_INDEX.NAMES, 2).setValue(`${prevName}\nPost-bac: `);
+    const prevName = sheetMatch.getRange(i + MATCH_INDEX.NAMES, 2).getValue();
+    sheetMatch.getRange(i + MATCH_INDEX.NAMES, 2).setValue(`${prevName}\nPost-bac: `);
   }
 
   // Add DIME slot
-  sheet_match.getRange(numSlots + MATCH_INDEX.NAMES, 1).setValue("DIME Providers");
-  sheet_match.getRange(numSlots + MATCH_INDEX.NAMES, 3).setValue("_____________________________________________\n_____________________________________________\n_____________________________________________");
-  sheet_match.getRange(numSlots + MATCH_INDEX.NAMES, 1, 1, 3).setBorder(true, true, true, true, true, true);
+  sheetMatch.getRange(numSlots + MATCH_INDEX.NAMES, 1).setValue("DIME Providers");
+  sheetMatch.getRange(numSlots + MATCH_INDEX.NAMES, 3).setValue("_____________________________________________\n_____________________________________________\n_____________________________________________");
+  sheetMatch.getRange(numSlots + MATCH_INDEX.NAMES, 1, 1, 3).setBorder(true, true, true, true, true, true);
 
   // Update match stats and gather sign-up information
   let managerEmailBody = "";
@@ -484,22 +496,26 @@ function updateMatchList(date, type, num_rooms, address) {
 
   for (const name of actuallyMatched) {
     const nameArr = findCellByName(name);
-    const trackSheet = sheets_track[nameArr[0]];
+    const trackSheet = sheetsTrack[nameArr[0]];
     const row = nameArr[1] + 1;
 
     // Update match count and date
-    let matches = trackSheet.getRange(row, TRACK_INDEX.MATCHES).getValue() || 0;
-    trackSheet.getRange(row, TRACK_INDEX.MATCHES).setValue(matches + 1);
-    trackSheet.getRange(row, TRACK_INDEX.DATE).setValue(date);
+    if (!DEBUG) {
+      let matches = trackSheet.getRange(row, TRACK_INDEX.MATCHES).getValue() || 0;
+      trackSheet.getRange(row, TRACK_INDEX.MATCHES).setValue(matches + 1);
+      trackSheet.getRange(row, TRACK_INDEX.DATE).setValue(date);
+    } else {
+      Logger.log(`DEBUG: Would update TRACKER sheet for ${name}: Matches incremented, Date set to ${date}`);
+    }
 
     // Gather sign-up information
-    const nameRowIndex = sign_names.findIndex(n => n[0] === name && sign_dates[n[0]].valueOf() === date.valueOf()) + 2;
+    const nameRowIndex = signNames.findIndex(n => n[0] === name && signDates[n[0]].valueOf() === date.valueOf()) + 2;
     if (nameRowIndex > 1) {
       signUpInfo[name] = {
-        spanish: sheet_sign.getRange(nameRowIndex, SIGN_INDEX.SPANISH).getValue(),
-        follow: sheet_sign.getRange(nameRowIndex, SIGN_INDEX.FOLLOW).getValue(),
-        carpool: sheet_sign.getRange(nameRowIndex, SIGN_INDEX.CARPOOL).getValue(),
-        comments: sheet_sign.getRange(nameRowIndex, SIGN_INDEX.COMMENTS).getValue()
+        spanish: sheetSign.getRange(nameRowIndex, SIGN_INDEX.SPANISH).getValue(),
+        follow: sheetSign.getRange(nameRowIndex, SIGN_INDEX.FOLLOW).getValue(),
+        carpool: sheetSign.getRange(nameRowIndex, SIGN_INDEX.CARPOOL).getValue(),
+        comments: sheetSign.getRange(nameRowIndex, SIGN_INDEX.COMMENTS).getValue()
       };
 
       managerEmailBody += `${name} -- Speaks Spanish: ${signUpInfo[name].spanish}; Can have followers: ${signUpInfo[name].follow}; Carpool status: ${signUpInfo[name].carpool}; Comments: ${signUpInfo[name].comments}\n`;
@@ -513,20 +529,24 @@ function updateMatchList(date, type, num_rooms, address) {
   const linkMatch = `https://docs.google.com/spreadsheets/d/${SHEETS_ID.MATCH}/edit?usp=sharing`;
   const linkTrack = `https://docs.google.com/spreadsheets/d/${SHEETS_ID.TRACKER}/edit?usp=sharing`;
 
-  htmlBody.type = clinic_title;
+  htmlBody.type = clinicInfo.title;
   htmlBody.date = dateString;
-  htmlBody.time = clinic_time;
+  htmlBody.time = clinicInfo.time;
   htmlBody.link = linkMatch;
   htmlBody.link_track = linkTrack;
   htmlBody.sign_up_notes = managerEmailBody;
 
   MailApp.sendEmail({
-    to: `${GET_INFO("ROCManager", "email")},${GET_INFO("DIMEManager", "email")},${GET_INFO("LayCouns", "email")}`,
+    to: DEBUG ? GET_INFO("Webmaster", "email") : `${GET_INFO("ROCManager", "email")},${GET_INFO("DIMEManager", "email")},${GET_INFO("LayCouns", "email")}`,
     subject: "ROC Match List (Prelim) and Notes from Sign-ups",
     replyTo: GET_INFO("Webmaster", "email"),
     htmlBody: htmlBody.evaluate().getContent(),
     name: "ROC Scheduling Assistant"
   });
+
+  if (DEBUG) {
+    Logger.log(`DEBUG: Preliminary match list email sent to Webmaster instead of ROC Manager, DIME Manager, and Lay Counselor for ROC on ${dateString}`);
+  }
 
   FormApp.getActiveForm().deleteAllResponses();
 }
@@ -539,43 +559,42 @@ function updateMatchList(date, type, num_rooms, address) {
  * @returns {GoogleAppsScript.Drive.File} The created PDF file.
  */
 function makeMatchPDF(date, type_code) {
+  // PDF Creation https://developers.google.com/apps-script/samples/automations/generate-pdfs
   const pdfName = `MatchList_${type_code}_${date.toISOString().split('T')[0]}.pdf`;
   const sheet = SpreadsheetApp.openById(SHEETS_ID.MATCH).getSheets()[0];
 
-  const exportOptions = {
-    format: 'pdf',
-    size: '7',
-    fzr: 'true',
-    portrait: 'true',
-    fitw: 'true',
-    gridlines: 'false',
-    printtitle: 'false',
-    top_margin: '0.25',
-    bottom_margin: '0.25',
-    left_margin: '0.25',
-    right_margin: '0.25',
-    sheetnames: 'false',
-    pagenum: 'UNDEFINED',
-    attachment: 'true',
-    gid: sheet.getSheetId(),
-    r1: 0,
-    c1: 0,
-    r2: 30,
-    c2: 4
-  };
+  const fr = 0, fc = 0, lc = 4, lr = 30;
+  const url = "https://docs.google.com/spreadsheets/d/" + SHEETS_ID.MATCH + "/export" +
+    "?format=pdf&" +
+    "size=7&" +
+    "fzr=true&" +
+    "portrait=true&" +
+    "fitw=true&" +
+    "gridlines=false&" +
+    "printtitle=false&" +
+    "top_margin=0.25&" +
+    "bottom_margin=0.25&" +
+    "left_margin=0.25&" +
+    "right_margin=0.25&" +
+    "sheetnames=false&" +
+    "pagenum=UNDEFINED&" +
+    "attachment=true&" +
+    "gid=" + sheet.getSheetId() + '&' +
+    "r1=" + fr + "&c1=" + fc + "&r2=" + lr + "&c2=" + lc;
 
-  const url = `https://docs.google.com/spreadsheets/${SHEETS_ID.MATCH}/export?${Object.entries(exportOptions).map(([k, v]) => `${k}=${v}`).join('&')}`;
-
-  const params = { 
-    method: "GET", 
-    headers: { "authorization": `Bearer ${ScriptApp.getOAuthToken()}` } 
-  };
-
+  const params = { method: "GET", headers: { "authorization": "Bearer " + ScriptApp.getOAuthToken() } };
   const blob = UrlFetchApp.fetch(url, params).getBlob().setName(pdfName);
-  const folder = DriveApp.getFoldersByName("MatchListsROC").next();
-  folder.createFile(blob);
 
-  return DriveApp.getFilesByName(pdfName).next();
+  // Gets the folder in Drive where the PDFs are stored.
+  const folder = DriveApp.getFoldersByName("MatchListsROC").next();
+
+  // Not entirely sure of this is necessary or if the next file query is
+  const pdfFile = folder.createFile(blob);
+  //return pdfFile;
+
+  var file = DriveApp.getFilesByName(pdfName).next();
+
+  return file;
 }
 
 /**
@@ -625,7 +644,12 @@ function onFormSubmit(e) {
   const nameArr = findCellByName(name);
   const trackerCell = sheetsTracker[nameArr[0]].getRange(nameArr[1] + 1, TRACK_INDEX.SIGNUPS);
   const currentSignups = trackerCell.getValue() || 0;
-  trackerCell.setValue(currentSignups + 1);
+  
+  if (!DEBUG) {
+    trackerCell.setValue(currentSignups + 1);
+  } else {
+    Logger.log(`DEBUG: Would update TRACKER sheet for ${name}: Signups incremented from ${currentSignups} to ${currentSignups + 1}`);
+  }
 }
 
 /**
@@ -734,36 +758,27 @@ function getYearTag(sheetNum) {
  */
 function GET_INFO(position, info) {
   const sheet = SpreadsheetApp.openById(SHEETS_ID.PEOPLE).getSheets()[0];
-  let positionIndex;
+  const positions = {
+    CEO: PEOPLE_INDEX.CEO,
+    COO: PEOPLE_INDEX.COO,
+    Webmaster: PEOPLE_INDEX.WEBMASTER,
+    GenPedManager: PEOPLE_INDEX.GEN_PED,
+    WomenManager: PEOPLE_INDEX.WOMEN,
+    GeriDermManager: PEOPLE_INDEX.GERI_DERM,
+    DIMEManager: PEOPLE_INDEX.DIME,
+    ROCManager: PEOPLE_INDEX.ROC,
+    SMManager: PEOPLE_INDEX.SM,
+    LayCouns: PEOPLE_INDEX.LAY,
+    ClassLists: PEOPLE_INDEX.CLASS
+  };
 
-  switch(position) {
-    case "CEO": positionIndex = PEOPLE_INDEX.CEO; break;
-    case "COO": positionIndex = PEOPLE_INDEX.COO; break;
-    case "Webmaster": positionIndex = PEOPLE_INDEX.WEBMASTER; break;
-    case "GenPedManager": positionIndex = PEOPLE_INDEX.GEN_PED; break;
-    case "WomenManager": positionIndex = PEOPLE_INDEX.WOMEN; break;
-    case "GeriDermManager": positionIndex = PEOPLE_INDEX.GERI_DERM; break;
-    case "DIMEManager": positionIndex = PEOPLE_INDEX.DIME; break;
-    case "ROCManager": positionIndex = PEOPLE_INDEX.ROC; break;
-    case "SMManager": positionIndex = PEOPLE_INDEX.SM; break;
-    case "LayCouns": positionIndex = PEOPLE_INDEX.LAY; break;
-    case "ClassLists": positionIndex = PEOPLE_INDEX.CLASS; break;
-    default: positionIndex = -1;
+  const rowIndex = positions[position];
+  if (!rowIndex) {
+    return info === "email" ? "Email Not Found" : "Name Not Found";
   }
 
-  if (positionIndex === -1) {
-    return info.toLowerCase() === "name" ? "Name Not Found" : "Email Not Found";
-  }
+  const name = sheet.getRange(rowIndex, 2).getValue();
+  const email = sheet.getRange(rowIndex, 3).getValue();
 
-  const name = sheet.getRange(positionIndex, 2).getValue();
-  const email = sheet.getRange(positionIndex, 3).getValue();
-
-  switch(info.toLowerCase()) {
-    case "email":
-      return email;
-    case "name":
-      return name;
-    default:
-      return "Bad Lookup";
-  }
+  return info.toLowerCase() === "email" ? email : name;
 }

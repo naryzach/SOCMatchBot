@@ -133,181 +133,193 @@ function discontinueTriggers() {
  * 4. Schedules the sending of match lists
  */
 function updateForm() {
-  var form = FormApp.getActiveForm();
-  var spreadsheet = SpreadsheetApp.openById(SHEETS_ID.DATES);
+  const form = FormApp.getActiveForm();
+  const spreadsheet = SpreadsheetApp.openById(SHEETS_ID.DATES);
+  const dateSheet = spreadsheet.getSheets()[0];
 
-  // Format time data
-  var date_column = spreadsheet.getRange('A:A');
-  date_column.setNumberFormat('dd-MM-yyyy');
+  // Format date column
+  dateSheet.getRange('A:A').setNumberFormat('dd-MM-yyyy');
 
-  // Get date,the date in 2, 3, and 5 days
-  var date = new Date();
-  var checkingDate = new Date(date.getFullYear(), date.getMonth(), date.getDate() + SIGNUP_DAYS.LEAD);
-  var checkingDateEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate() + SIGNUP_DAYS.CLOSE);
-  var checkingDateManage = new Date(date.getFullYear(), date.getMonth(), date.getDate() + SIGNUP_DAYS.MANAGE);
-  var checkingDateCEO = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
+  const today = new Date();
+  const checkDates = {
+    lead: new Date(today.getFullYear(), today.getMonth(), today.getDate() + SIGNUP_DAYS.LEAD),
+    close: new Date(today.getFullYear(), today.getMonth(), today.getDate() + SIGNUP_DAYS.CLOSE),
+    manage: new Date(today.getFullYear(), today.getMonth(), today.getDate() + SIGNUP_DAYS.MANAGE),
+    ceo: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1)
+  };
 
-  var ss_end = spreadsheet.getSheets()[0]
-    .getRange(1, 1)
-    .getNextDataCell(SpreadsheetApp.Direction.DOWN)
-    .getRow();
+  const lastRow = dateSheet.getLastRow();
 
-  for (var i = 2; i <= ss_end; i++) {
-    var cell = spreadsheet.getRange("A" + i.toString());
-    var c_Date = new Date(cell.getValue().toString());
-    var time = getTimeForDay(c_Date.getDay());
-    var clinic_type_code = spreadsheet.getRange("B" + i.toString()).getValue().toString();
-    var type = getClinicType(clinic_type_code);
-    var clinic_emails = getEmailForClinicType(clinic_type_code);
+  for (let i = 2; i <= lastRow; i++) {
+    const clinicDate = new Date(dateSheet.getRange(`A${i}`).getValue());
+    const clinicTypeCode = dateSheet.getRange(`B${i}`).getValue().toString();
 
-    // Get the clinic time
-    switch (c_Date.getDay()) {
-      case 2: 
-        time = "6pm - 10pm"
-        break;
-      case 6:
-        time = "8am - 12pm"
-        break;
-      default:
-        time = "Unknown"
-        Logger.log("Issue with time extraction");
-    }
+    const timeMap = {
+      2: "6pm - 10pm",
+      6: "8am - 12pm"
+    };
 
-    // Get clinic type
-    clinic_type_code = spreadsheet.getRange("B" + i.toString()).getValue().toString();
-    switch (clinic_type_code) {
-      case "W":
-        type = "Women's";
-        clinic_emails = GET_INFO("WomenManager", "email");
-        break;
-      case "GP":
-        type = "Gen/Peds";
-        clinic_emails = GET_INFO("GenPedManager", "email");
-        break;
-      case "GD":
-        type = "Geri/Derm";
-        clinic_emails = GET_INFO("GeriDermManager", "email");
-        break;
-      default:
-        type = "Unknown";
-        clinic_emails = GET_INFO("Webmaster", "email");
-        Logger.log("Problem with clinic type");
-    }
+    const typeMap = {
+      W: { name: "Women's", manager: "WomenManager" },
+      GP: { name: "Gen/Peds", manager: "GenPedManager" },
+      GD: { name: "Geri/Derm", manager: "GeriDermManager" }
+    };
 
-    // Format time
-    var tz = "GMT-" + String(c_Date.getTimezoneOffset()/60) // will not work east of Prime Meridian
-    var date_string  = Utilities.formatDate(c_Date, tz, 'EEEE, MMMM dd, YYYY');
+    const tz = `GMT-${clinicDate.getTimezoneOffset() / 60}`;
+    const dateString = Utilities.formatDate(clinicDate, tz, 'EEEE, MMMM dd, YYYY');
 
-    // Links to Google pages
-    var formLink = "https://docs.google.com/forms/d/e/" + FORMS_ID.OFFICIAL + "/viewform?usp=sf_link"
-    var formLinkMod = "https://docs.google.com/forms/d/e/" + FORMS_ID.MOD + "/viewform?usp=sf_link"
-    var linkDate = "https://docs.google.com/spreadsheets/d/" + SHEETS_ID.DATES + "/edit?usp=sharing"
-    var linkTrack = "https://docs.google.com/spreadsheets/d/" + SHEETS_ID.TRACKER + "/edit?usp=sharing"
-    var linkMatch = "https://docs.google.com/spreadsheets/d/" + SHEETS_ID.MATCH + "/edit?usp=sharing"
+    const clinicInfo = {
+      date: clinicDate,
+      dateString: dateString,
+      time: timeMap[clinicDate.getDay()] || "Unknown",
+      type: typeMap[clinicTypeCode]?.name || "Unknown",
+      managerEmail: GET_INFO(typeMap[clinicTypeCode]?.manager || "Webmaster", "email"),
+      typeCode: clinicTypeCode
+    };
 
-    // If 5 days out, update the Form
-    if (c_Date.valueOf() == checkingDate.valueOf()) {
-      // Update Form information
-      updateStudents();
-      form.setTitle(type + " Clinic Sign Up -- " + date_string + " from " + time);
-      form.setDescription(Utilities.formatDate(c_Date, tz, 'MM/dd/YYYY') + ";" + clinic_type_code);
-      form.setAcceptingResponses(true);
-      var formCloseDate = new Date(date);
-      formCloseDate.setDate(formCloseDate.getDate() + (SIGNUP_DAYS.LEAD - SIGNUP_DAYS.CLOSE));
-
-      // Send email prompting sign ups from HTML format
-      var html_body = HtmlService.createTemplateFromFile('SignUpEmail');  
-      html_body.type = type;
-      html_body.date = date_string;
-      html_body.close_date = Utilities.formatDate(formCloseDate, tz, 'EEEE, MMMM dd, YYYY');
-      html_body.time = time;
-      html_body.link = formLink;
-      html_body.feedback_email = GET_INFO("Webmaster", "email");
-      var email_html = html_body.evaluate().getContent();
-      MailApp.sendEmail({
-        to: DEBUG ? GET_INFO("Webmaster", "email") : GET_INFO("ClassLists", "email"),
-        subject:  "Sign up for SOC on " + date_string,
-        replyTo: clinic_emails,
-        htmlBody: email_html,
-        name: "SOC Scheduling Assistant"
-      });
-    
-    // if 3 days out, ask for number of rooms
-    } else if (c_Date.valueOf() == checkingDateManage.valueOf()) {
-      // Set number of rooms to 10 by defult
-      spreadsheet.getRange(DATE_INDEX.ROOMS).setValue(DATE_INDEX.DEFAULT_NUM_ROOMS);
-
-      // Send email prompting managers to fill in the number of rooms needed
-      var html_body = HtmlService.createTemplateFromFile('RoomNumEmail');  
-      html_body.type = type;
-      html_body.date = date_string;
-      html_body.cell_ndx = DATE_INDEX.ROOMS;
-      html_body.time = time;
-      html_body.link_date = linkDate;
-      html_body.link_match = linkMatch;
-      html_body.link_match_track = linkTrack;
-      html_body.link_form_mod = formLinkMod;
-      var email_html = html_body.evaluate().getContent();
-      MailApp.sendEmail({
-        to: DEBUG ? GET_INFO("Webmaster", "email") : clinic_emails,
-        subject:  "SOC Clinic Room Availiblity Form",
-        replyTo: GET_INFO("Webmaster", "email"),
-        htmlBody: email_html,
-        name: "SOC Scheduling Assistant"
-      });
-    
-    // if 2 days out, update form
-    } else if (c_Date.valueOf() == checkingDateEnd.valueOf()) {
-      // Update form
-      form.setTitle("Sign Ups Closed.");
-      form.setDescription("Thank you for your interest. Please check back when another clinic is closer.");
-      //form.setDescription(Utilities.formatDate(c_Date, tz, 'MM/dd/YYYY'));
-      form.setAcceptingResponses(false);
-      var num_rooms = parseInt(spreadsheet.getRange(DATE_INDEX.ROOMS).getValue().toString());
-      updateMatchList(checkingDateEnd, clinic_type_code, num_rooms);
-
-      // Set tmp data in dates sheet for later use
-      spreadsheet.getRange("X1").setValue(type);
-      spreadsheet.getRange("X2").setValue(date_string);
-      spreadsheet.getRange("X3").setValue(time);
-      spreadsheet.getRange("X4").setValue(clinic_emails);
-
-      // Delay the sending the match list until noon (set up a new trigger)
-      var d_today = new Date();
-      var d_year = d_today.getFullYear();
-      var d_month = d_today.getMonth();
-      var d_day = d_today.getDate();
-      var d_functionName = 'matchListDelay';
-      ScriptApp.getProjectTriggers().forEach(trigger => {
-      if (trigger.getHandlerFunction() === d_functionName) {
-          ScriptApp.deleteTrigger(trigger);
-        }
-      });
-      ScriptApp.newTrigger(d_functionName)
-        .timeBased()
-        .at(new Date(d_year, d_month, d_day, 17, 0))
-        .create();
-    
-    /*
-    // if 1 day out, send the email to CEO and COO with the PDF
-    } else if (c_Date.valueOf() == checkingDateCEO.valueOf()) {
-      var file = makeMatchPDF(c_Date); // make the PDF of the match list
-      
-      MailApp.sendEmail({
-        to: GET_INFO("CEO", "email") + ", " + GET_INFO("COO", "email"),
-        subject:  "Final Match List for SOC on " + date_string,
-        replyTo: GET_INFO("Webmaster", "email"),
-        htmlBody: "Attached is the PDF for the upcoming SOC.<br><br>Best,<br>The SOC Scheduler",
-        attachments: [file.getAs(MimeType.PDF)],
-        name: "SOC Scheduling Assistant"
-      });
-
-    // Save final version of Match List on the day of clinic
-    } else if (c_Date.valueOf() == date.valueOf()) {
-      makeMatchPDF(c_Date)
-    */
+    if (clinicDate.valueOf() === checkDates.lead.valueOf()) {
+      handleLeadTime(form, clinicInfo);
+    } else if (clinicDate.valueOf() === checkDates.manage.valueOf()) {
+      handleManageTime(spreadsheet, clinicInfo);
+    } else if (clinicDate.valueOf() === checkDates.close.valueOf()) {
+      handleCloseTime(form, spreadsheet, clinicInfo);
     }
   }
+}
+
+/**
+ * Handles the lead time for clinic sign-ups.
+ * 
+ * This function is called when it's time to open sign-ups for a clinic.
+ * It performs the following tasks:
+ * 1. Updates the list of students who can sign up
+ * 2. Sets up the sign-up form with clinic details
+ * 3. Calculates the closing date for sign-ups
+ * 4. Sends a sign-up email to students
+ * 
+ * @param {GoogleAppsScript.Forms.Form} form - The Google Form object for sign-ups
+ * @param {Object} clinicInfo - Object containing clinic details (date, type, time, etc.)
+ */
+function handleLeadTime(form, clinicInfo) {
+  updateStudents();
+  form.setTitle(`${clinicInfo.type} Clinic Sign Up -- ${clinicInfo.dateString} from ${clinicInfo.time}`);
+  form.setDescription(`${Utilities.formatDate(clinicInfo.date, 'GMT', 'MM/dd/YYYY')};${clinicInfo.typeCode}`);
+  form.setAcceptingResponses(true);
+
+  const closeDate = new Date();
+  closeDate.setDate(closeDate.getDate() + (SIGNUP_DAYS.LEAD - SIGNUP_DAYS.CLOSE));
+
+  // Send sign-up email
+  const htmlBody = HtmlService.createTemplateFromFile('SignUpEmail');
+  htmlBody.type = clinicInfo.type;
+  htmlBody.date = clinicInfo.dateString;
+  htmlBody.close_date = Utilities.formatDate(closeDate, 'GMT', 'EEEE, MMMM dd, YYYY');
+  htmlBody.time = clinicInfo.time;
+  htmlBody.link = `https://docs.google.com/forms/d/e/${FORMS_ID.OFFICIAL}/viewform?usp=sf_link`;
+  htmlBody.feedback_email = GET_INFO("Webmaster", "email");
+
+  const emailHtml = htmlBody.evaluate().getContent();
+  const recipient = DEBUG ? GET_INFO("Webmaster", "email") : GET_INFO("ClassLists", "email");
+
+  MailApp.sendEmail({
+    to: recipient,
+    subject: `Sign up for SOC on ${clinicInfo.dateString}`,
+    replyTo: clinicInfo.managerEmail,
+    htmlBody: emailHtml,
+    name: "SOC Scheduling Assistant"
+  });
+
+  if (DEBUG) {
+    Logger.log(`DEBUG: Sign-up email sent to Webmaster instead of class lists for SOC on ${clinicInfo.dateString}`);
+  }
+}
+
+/**
+ * Handles the management time for clinic preparation.
+ * 
+ * This function is called a few days before the clinic to prepare for room allocation.
+ * It performs the following tasks:
+ * 1. Sets the default number of rooms for the clinic
+ * 2. Sends an email to the clinic manager about room availability
+ * 
+ * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} spreadsheet - The Google Spreadsheet object
+ * @param {Object} clinicInfo - Object containing clinic details (date, type, time, etc.)
+ */
+function handleManageTime(spreadsheet, clinicInfo) {
+  spreadsheet.getRange(DATE_INDEX.ROOMS).setValue(DATE_INDEX.DEFAULT_NUM_ROOMS);
+
+  // Send room availability email
+  const htmlBody = HtmlService.createTemplateFromFile('RoomNumEmail');
+  htmlBody.type = clinicInfo.type;
+  htmlBody.date = clinicInfo.dateString;
+  htmlBody.cell_ndx = DATE_INDEX.ROOMS;
+  htmlBody.time = clinicInfo.time;
+  htmlBody.link_date = `https://docs.google.com/spreadsheets/d/${SHEETS_ID.DATES}/edit?usp=sharing`;
+  htmlBody.link_match = `https://docs.google.com/spreadsheets/d/${SHEETS_ID.MATCH}/edit?usp=sharing`;
+  htmlBody.link_match_track = `https://docs.google.com/spreadsheets/d/${SHEETS_ID.TRACKER}/edit?usp=sharing`;
+  htmlBody.link_form_mod = `https://docs.google.com/forms/d/e/${FORMS_ID.MOD}/viewform?usp=sf_link`;
+
+  const emailHtml = htmlBody.evaluate().getContent();
+  const recipient = DEBUG ? GET_INFO("Webmaster", "email") : clinicInfo.managerEmail;
+
+  MailApp.sendEmail({
+    to: recipient,
+    subject: "SOC Clinic Room Availability Form",
+    replyTo: GET_INFO("Webmaster", "email"),
+    htmlBody: emailHtml,
+    name: "SOC Scheduling Assistant"
+  });
+
+  if (DEBUG) {
+    Logger.log(`DEBUG: Room availability email sent to Webmaster instead of managers for SOC on ${clinicInfo.dateString}`);
+  }
+}
+
+/**
+ * Handles the closing time for clinic sign-ups.
+ * 
+ * This function is called when it's time to close sign-ups for a clinic.
+ * It performs the following tasks:
+ * 1. Closes the sign-up form
+ * 2. Updates the match list based on sign-ups and available rooms
+ * 3. Stores temporary data for later use
+ * 4. Schedules a trigger to send the match list email later
+ * 
+ * @param {GoogleAppsScript.Forms.Form} form - The Google Form object for sign-ups
+ * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} spreadsheet - The Google Spreadsheet object
+ * @param {Object} clinicInfo - Object containing clinic details (date, type, time, etc.)
+ */
+function handleCloseTime(form, spreadsheet, clinicInfo) {
+  form.setTitle("Sign Ups Closed.");
+  form.setDescription("Thank you for your interest. Please check back when another clinic is closer.");
+  form.setAcceptingResponses(false);
+
+  const numRooms = parseInt(spreadsheet.getRange(DATE_INDEX.ROOMS).getValue());
+  updateMatchList(clinicInfo.date, clinicInfo.typeCode, numRooms);
+
+  // Store temporary data
+  const tempDataRange = spreadsheet.getRange("X1:X4");
+  tempDataRange.setValues([
+    [clinicInfo.type],
+    [clinicInfo.dateString],
+    [clinicInfo.time],
+    [clinicInfo.managerEmail]
+  ]);
+
+  // Schedule match list delay
+  const today = new Date();
+  const triggerTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 17, 0);
+  
+  ScriptApp.getProjectTriggers().forEach(trigger => {
+    if (trigger.getHandlerFunction() === 'matchListDelay') {
+      ScriptApp.deleteTrigger(trigger);
+    }
+  });
+
+  ScriptApp.newTrigger('matchListDelay')
+    .timeBased()
+    .at(triggerTime)
+    .create();
 }
 
 /**
@@ -346,6 +358,10 @@ function matchListDelay() {
     attachments: [file.getAs(MimeType.PDF)],
     name: "SOC Scheduling Assistant"
   });
+
+  if (DEBUG) {
+    Logger.log(`DEBUG: Final match list email sent to Webmaster instead of class lists for SOC on ${date_string}`);
+  }
 }
 
 /**
@@ -429,7 +445,7 @@ function updateMatchList(date, type, num_rooms) {
         if (!DEBUG) {
           sheets_track[nameArr[0]].getRange(nameArr[1] + 1, TRACK_INDEX.CXLEARLY).setValue(parseInt(tmp) + 1);
         } else {
-          Logger.log("DEBUG: Would update TRACKER sheet for " + largeNameList[name].slice(0,-3) + ": CXLEARLY = " + (parseInt(tmp) + 1));
+          Logger.log(`DEBUG: Would update TRACKER sheet for ${largeNameList[name].slice(0,-3)}: CXLEARLY = ${parseInt(tmp) + 1}`);
         }
       }
 
@@ -447,57 +463,31 @@ function updateMatchList(date, type, num_rooms) {
     fourthYrElect = sheet_sign.getRange(name_row_ndx, SIGN_INDEX.ELECTIVE).getValue();
     socPos = sheet_sign.getRange(name_row_ndx, SIGN_INDEX.SOC_POS).getValue();
 
-    // Caluclate match score
+    // Calculate base match score
     matchScore = signUps - matches;
 
-    // Elective and SOC position additions
-    if (socPos == "Yes" && (nameArr[0] == 0 || nameArr[0] == 1)) { //MS1/2s -- second check is unneccesary
-      //matchScore += 100; // rank SOC members in a hierarchy
-      matchScore *= 2; // Only slightly bias SOC members rather than rank in a hierarchy
+    // Adjust score based on student status and position
+    if (socPos == "Yes" && nameArr[0] <= 1) { // SOC members (MS1/2s)
+      matchScore *= 2;
     }
-    if (fourthYrElect == "Yes" && nameArr[0] == 3) { // MS4s
+    if (fourthYrElect == "Yes" && nameArr[0] == 3) { // MS4s on elective
       matchScore += 500;
     }
 
     // Add points based on seniority
-    switch (nameArr[0]) {
-      case 0:
-        break;
-      case 1:
-        matchScore += 50; //second year
-        break;
-      case 2:
-        matchScore += 500; //third year
-        break;
-      case 3:
-        matchScore += 1000; //fourth year
-        break;
-      case 4:
-        break;
-      case 5:
-        break;
-    }
+    const seniorityPoints = [0, 50, 500, 1000, 0, 0];
+    matchScore += seniorityPoints[nameArr[0]] || 0;
 
-    // Never been matched addition
-    var daysSince = 0;
+    // Adjust for last match date
     if (lastDate == "") {
-      matchScore += 25;
-    // Add fractional points to help sort by last match
+      matchScore += 25; // Never been matched
     } else {
-      daysSince = (new Date - new Date(lastDate)) / (1000*60*60*24);
-      matchScore += daysSince/365;
+      const daysSince = (new Date() - new Date(lastDate)) / (1000 * 60 * 60 * 24);
+      matchScore += daysSince / 365;
     }
 
-    // Cancellation penalty
-    if (!isNaN(noShow)) {
-      matchScore -= noShow * 3;
-    }
-    if (!isNaN(cxlLate)) {
-      matchScore -= cxlLate * 2;
-    }
-    if (!isNaN(cxlEarly)) {
-      matchScore -= cxlEarly;
-    }
+    // Apply cancellation penalties
+    matchScore -= (noShow * 3 + cxlLate * 2 + cxlEarly) || 0;
 
     // Create dictionary of name (key) and score (value)
     namesWithScores[largeNameList[name]] = matchScore;
@@ -536,45 +526,44 @@ function updateMatchList(date, type, num_rooms) {
   sheet_match.getRange(MATCH_INDEX.CHALK_TALK).setValue("");
 
   // Update Match List Sheet header
-  var dayOfWeek = date.getDay();
-  var clinic_time = "";
-  switch (dayOfWeek) {
-    case 2: 
-      clinic_time = "6PM - 10PM";
-      break;
-    case 6:
-      clinic_time = "8AM - 12PM";
-      break;
-    default:
-      clinic_time = "Unknown";
-      Logger.log("Issue with time extraction");
+  const clinicTimes = {
+    2: "6PM - 10PM",
+    6: "8AM - 12PM"
+  };
+  const clinic_time = clinicTimes[date.getDay()] || "Unknown";
+  
+  if (!clinicTimes[date.getDay()]) {
+    Logger.log("Issue with time extraction");
   }
 
-  var clinic_title = "";
-  var manager_names = "";
-  var manager_emails = "";
-  switch (type) {
-    case "W":
-      clinic_title = "Women's Clinic";
-      manager_names = GET_INFO("WomenManager", "name");
-      manager_emails = GET_INFO("WomenManager", "email");
-      break;
-    case "GP":
-      clinic_title = "General & Pediatric Clinic";
-      manager_names = GET_INFO("GenPedManager", "name");
-      manager_emails = GET_INFO("GenPedManager", "email");
-      break;
-    case "GD":
-      clinic_title = "Geriatrics & Dermatology Clinic";
-      manager_names = GET_INFO("GeriDermManager", "name");
-      manager_emails = GET_INFO("GeriDermManager", "email");
-      break;
-    default:
-      clinic_title = "Unknown";
-      manager_names = "Error";
-      manager_emails = GET_INFO("Webmaster", "email")
-      Logger.log("Problem with clinic type");
+  const clinicTypes = {
+    "W": {
+      title: "Women's Clinic",
+      managerType: "WomenManager"
+    },
+    "GP": {
+      title: "General & Pediatric Clinic",
+      managerType: "GenPedManager"
+    },
+    "GD": {
+      title: "Geriatrics & Dermatology Clinic",
+      managerType: "GeriDermManager"
+    }
+  };
+
+  const clinicInfo = clinicTypes[type] || {
+    title: "Unknown",
+    managerType: "Webmaster"
+  };
+
+  if (!clinicTypes[type]) {
+    Logger.log("Problem with clinic type");
   }
+
+  const clinic_title = clinicInfo.title;
+  const manager_names = GET_INFO(clinicInfo.managerType, "name");
+  const manager_emails = GET_INFO(clinicInfo.managerType, "email");
+
   sheet_match.getRange(MATCH_INDEX.TITLE).setValue(clinic_title);
   sheet_match.getRange(MATCH_INDEX.DATE).setValue(date);
   sheet_match.getRange(MATCH_INDEX.TIME).setValue(clinic_time);
@@ -684,7 +673,7 @@ function updateMatchList(date, type, num_rooms) {
       sheets_track[nameArr[0]].getRange(nameArr[1] + 1, TRACK_INDEX.MATCHES).setValue(parseInt(tmp) + 1);
       sheets_track[nameArr[0]].getRange(nameArr[1] + 1, TRACK_INDEX.DATE).setValue(date);
     } else {
-      Logger.log("DEBUG: Would update TRACKER sheet for " + actuallyMatched[name] + ": Matches = " + (parseInt(tmp) + 1) + ", Date = " + date);
+      Logger.log(`DEBUG: Would update TRACKER sheet for ${actuallyMatched[name]}: Matches = ${parseInt(tmp) + 1}, Date = ${date}`);
     }
 
     // Account for dietary restrictions and comments
@@ -718,6 +707,10 @@ function updateMatchList(date, type, num_rooms) {
     htmlBody: email_html,
     name: "SOC Scheduling Assistant"
   });
+
+  if (DEBUG) {
+    Logger.log(`DEBUG: Preliminary match list email sent to Webmaster instead of managers for SOC on ${date}`);
+  }
 
   FormApp.getActiveForm().deleteAllResponses();
 }
@@ -852,90 +845,114 @@ function sendWebmasterList() {
   });
 }
 
-// Build the list of names from the sheet
-function buildNameList () {
-  var sheets = SpreadsheetApp.openById(SHEETS_ID.TRACKER).getSheets();
-  var studentNames = [];
-  var yearTag = "";
-  
-  for (var i = 0; i < sheets.length; i++) {
-    var sheet = sheets[i];
-    var lastNamesValues = sheet.getRange(2, TRACK_INDEX.LASTNAME, sheet.getMaxRows() - 1).getValues();
-    var firstNamesValues = sheet.getRange(2, TRACK_INDEX.FIRSTNAME, sheet.getMaxRows() - 1).getValues();
+/**
+ * Builds and returns a sorted list of student names from the tracker spreadsheet.
+ * 
+ * This function performs the following tasks:
+ * 1. Retrieves all sheets from the tracker spreadsheet
+ * 2. Iterates through each sheet, collecting student names
+ * 3. Formats each name as "Last, First (YearTag)"
+ * 4. Checks for and logs any duplicate names
+ * 5. Returns a sorted list of unique student names
+ *
+ * @returns {string[]} A sorted array of formatted student names
+ */
+function buildNameList() {
+  const sheets = SpreadsheetApp.openById(SHEETS_ID.TRACKER).getSheets();
+  const studentNames = new Set();
 
-    // convert the array ignoring empty cells
-    for(var j = 0; j < lastNamesValues.length; j++) {
-      if(lastNamesValues[j][0] != "") {
-        yearTag = getYearTag(i);
-        if (!yearTag) continue;
-        newName = lastNamesValues[j][0] + ", " + firstNamesValues[j][0] + " (" + yearTag + ")";
-        if (studentNames.includes(newName)) {
-          Logger.log("Duplicate: " + newName);
+  sheets.forEach((sheet, sheetIndex) => {
+    const yearTag = getYearTag(sheetIndex);
+    if (!yearTag) return;
+
+    const lastRow = sheet.getLastRow();
+    const lastNames = sheet.getRange(2, TRACK_INDEX.LASTNAME, lastRow - 1, 1).getValues();
+    const firstNames = sheet.getRange(2, TRACK_INDEX.FIRSTNAME, lastRow - 1, 1).getValues();
+
+    lastNames.forEach((lastName, index) => {
+      if (lastName[0] !== "") {
+        const newName = `${lastName[0]}, ${firstNames[index][0]} (${yearTag})`;
+        if (studentNames.has(newName)) {
+          Logger.log(`Duplicate: ${newName}`);
+        } else {
+          studentNames.add(newName);
         }
-        studentNames.push(newName);
       }
-    }
-  }
-  studentNames = studentNames.sort();
-  Logger.log(studentNames);
-  return studentNames; 
+    });
+  });
+
+  const sortedNames = Array.from(studentNames).sort();
+  Logger.log(sortedNames);
+  return sortedNames;
 }
 
-/*
- * Given a name as formatted by the formatter, get an array with 
- * the student's [year_sheet_index, name_row_index]
+/**
+ * Finds the sheet index and row index for a given student name.
+ * 
+ * @param {string} name - The formatted name of the student (e.g., "Last, First (MS1)").
+ * @returns {number[]} An array containing [sheetIndex, rowIndex] of the student's entry.
  */
 function findCellByName(name) {
-  var sheets = SpreadsheetApp.openById(SHEETS_ID.TRACKER).getSheets();
-  var nameArr = name.slice(0, -6).split(", ");
-  var firstName = nameArr[1];
-  var lastName = nameArr[0];
+  const sheets = SpreadsheetApp.openById(SHEETS_ID.TRACKER).getSheets();
+  const [lastName, firstName] = name.slice(0, -6).split(", ");
 
-  var sheetNum = -1;
-  var nameNum = -1;
-  
-  for (var i = 0; i < sheets.length; i++) {
-    var sheet = sheets[i];
-    var lastNamesValues = sheet.getRange(1, TRACK_INDEX.LASTNAME, sheet.getMaxRows() - 1).getValues();
-    var firstNamesValues = sheet.getRange(1, TRACK_INDEX.FIRSTNAME, sheet.getMaxRows() - 1).getValues();
+  for (let sheetIndex = 0; sheetIndex < sheets.length; sheetIndex++) {
+    const sheet = sheets[sheetIndex];
+    const lastNames = sheet.getRange(2, TRACK_INDEX.LASTNAME, sheet.getLastRow() - 1, 1).getValues();
+    const firstNames = sheet.getRange(2, TRACK_INDEX.FIRSTNAME, sheet.getLastRow() - 1, 1).getValues();
 
-    // convert the array ignoring empty cells
-    for(var j = 0; j < lastNamesValues.length; j++) {
-      //if(firstNamesValues[j][0][0] == firstName[0]) {Logger.log("%s, %s", firstNamesValues[j][0], firstName);}
-      //if(lastNamesValues[j][0] == lastName) {Logger.log("%s, %s", lastNamesValues[j][0], lastName);}
-      if(firstNamesValues[j][0] == firstName && lastNamesValues[j][0] == lastName) {
-        sheetNum = i;
-        nameNum = j;
-        break;
-      }
+    const rowIndex = lastNames.findIndex((row, index) => 
+      row[0] === lastName && firstNames[index][0] === firstName
+    );
+
+    if (rowIndex !== -1) {
+      return [sheetIndex, rowIndex + 2]; // +2 because we start from row 2 and array is 0-indexed
     }
-    if (sheetNum != -1) break;
   }
 
-  if (sheetNum == -1 && nameNum == -1) {
-    Logger.log("Did not find name")
-    Logger.log(name)
-  }
-
-  return([sheetNum, nameNum]);
+  Logger.log(`Did not find name: ${name}`);
+  return [-1, -1];
 }
 
-// Update the name list for the Google Form 
+/**
+ * Updates the list of student names in the Google Form.
+ * 
+ * This function retrieves the current list of student names and
+ * updates the corresponding form item with these names as choices.
+ */
 function updateStudents() {
-  var form = FormApp.getActiveForm();
-  var namesList = form.getItemById(NAMES_ID).asListItem();
-
-  // Generate name options from Match Tracker
-  var studentNames = buildNameList();
+  const form = FormApp.getActiveForm();
+  const namesList = form.getItemById(NAMES_ID).asListItem();
+  const studentNames = buildNameList();
   namesList.setChoiceValues(studentNames);
 }
 
+/**
+ * Returns the year tag based on the sheet index.
+ * 
+ * @param {number} sheetNum - The index of the sheet.
+ * @returns {string|number} The year tag (e.g., "MS1", "PA2") or 0 if invalid.
+ */
 function getYearTag(sheetNum) {
-  var tags = ["MS1", "MS2", "MS3", "MS4", "PA1", "PA2"]
-  if (sheetNum > tags.length) return 0;
-  return tags[sheetNum];
+  const tags = ["MS1", "MS2", "MS3", "MS4", "PA1", "PA2"];
+  return sheetNum < tags.length ? tags[sheetNum] : 0;
 }
 
+/**
+ * Retrieves information about a specific position from the People sheet.
+ * 
+ * @param {string} position - The position to look up (e.g., "CEO", "ROCManager", "ClassLists").
+ * @param {string} info - The type of information to retrieve ("name" or "email").
+ * @returns {string} The requested information (name or email) for the specified position.
+ * 
+ * This function:
+ * 1. Opens the People sheet using the SHEET_PEOPLE ID.
+ * 2. Uses a switch statement to find the correct row for the given position.
+ * 3. Retrieves the name and email from the appropriate cells.
+ * 4. Returns the requested information (name or email) based on the 'info' parameter.
+ * 
+ * If the position is not found or the info type is invalid, it returns an error message.
+ */
 function GET_INFO(position, info) {
   const sheet = SpreadsheetApp.openById(SHEETS_ID.PEOPLE).getSheets()[0];
   const positions = {
