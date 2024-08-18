@@ -2,7 +2,7 @@
 // Run createTriggers() after Match Tracker is updated
 // Update clinic dates for proper flow of automation
 
-const DEBUG = false;
+const DEBUG = true;
 
 // Sheet IDs
 const SHEETS_ID = {
@@ -42,18 +42,6 @@ const SIGN_INDEX = {
   CLINIC_TYPE: 11
 };
 
-// Match tracker sheet
-const TRACK_INDEX = {
-  LASTNAME: 1,
-  FIRSTNAME: 2,
-  SIGNUPS: 3,
-  MATCHES: 4,
-  NOSHOW: 5,
-  CXLLATE: 6,
-  CXLEARLY: 7,
-  DATE: 8
-};
-
 // Match list sheet
 const MATCH_INDEX = {
   NAMES: 15,
@@ -67,21 +55,6 @@ const MATCH_INDEX = {
   INTERPRET: "C8",
   SHADOW: "D8",
   VOLUNT: "C12"
-};
-
-// People sheet
-const PEOPLE_INDEX = {
-  CEO: 2,
-  COO: 3,
-  WEBMASTER: 4,
-  GEN_PED: 5,
-  WOMEN: 6,
-  GERI_DERM: 7,
-  DIME: 8,
-  LAY: 9,
-  ROC: 10,
-  SM: 11,
-  CLASS: 12
 };
 
 // NOTES:
@@ -151,7 +124,16 @@ function updateForm() {
     const timeZone = `GMT-${clinicDate.getTimezoneOffset() / 60}`; // Note: This won't work east of Prime Meridian
     const dateString = Utilities.formatDate(clinicDate, timeZone, 'EEEE, MMMM dd, YYYY');
 
-    const clinicInfo = getClinicInfo(clinicDate, spreadsheet.getRange(`B${i}`).getValue());
+    const typeCode = spreadsheet.getRange(`B${i}`).getValue();
+    const clinicTypes = {
+      Y: { type: "Yerington", address: "South Lyon Physicians Clinic, 213 S Whitacre St., Yerington,NV", rooms: 6 },
+      SS: { type: "Silver Springs", address: "3595 Hwy 50, Suite 3 (In Lahontan Medical Complex), Silver Springs, NV", rooms: 5 },
+      F: { type: "Fallon", address: "485 West B St Suite 101, Fallon, NV", rooms: 3 }
+    };
+
+    const clinicInfo = clinicTypes[typeCode] || { type: "Unknown", address: "Unknown", rooms: 0 };
+    clinicInfo.time = clinicDate.getDay() === 0 ? "9am - 3pm" : clinicDate.getDay() === 6 ? "9am - 1pm" : "Unknown";
+    clinicInfo.typeCode = typeCode;
 
     const links = {
       form: `https://docs.google.com/forms/d/e/${FORMS_ID.OFFICIAL}/viewform?usp=sf_link`,
@@ -168,113 +150,6 @@ function updateForm() {
     } else if (clinicDate.valueOf() === checkingDates.close.valueOf()) {
       handleFinalMatch(dateString, clinicDate, clinicInfo);
     }
-  }
-}
-
-/**
- * Retrieves clinic information based on the date and type code.
- * @param {Date} date - The date of the clinic.
- * @param {string} typeCode - A code representing the clinic type (Y, SS, or F).
- * @returns {Object} An object containing clinic information (type, address, rooms, time, typeCode).
- */
-function getClinicInfo(date, typeCode) {
-  const clinicTypes = {
-    Y: { type: "Yerington", address: "South Lyon Physicians Clinic, 213 S Whitacre St., Yerington,NV", rooms: 6 },
-    SS: { type: "Silver Springs", address: "3595 Hwy 50, Suite 3 (In Lahontan Medical Complex), Silver Springs, NV", rooms: 5 },
-    F: { type: "Fallon", address: "485 West B St Suite 101, Fallon, NV", rooms: 3 }
-  };
-
-  const clinicInfo = clinicTypes[typeCode] || { type: "Unknown", address: "Unknown", rooms: 0 };
-  clinicInfo.time = date.getDay() === 0 ? "9am - 3pm" : date.getDay() === 6 ? "9am - 1pm" : "Unknown";
-  clinicInfo.typeCode = typeCode;
-
-  return clinicInfo;
-}
-
-/**
- * Handles the sign-up process for a clinic.
- * Updates the form, sends sign-up emails, and manages form responses.
- * @param {GoogleAppsScript.Forms.Form} form - The Google Form to update.
- * @param {string} dateString - Formatted date string for the clinic.
- * @param {Date} clinicDate - Date object for the clinic.
- * @param {string} timeZone - Time zone string for date formatting.
- * @param {Object} clinicInfo - Object containing clinic information.
- * @param {Object} links - Object containing various relevant URLs.
- */
-function handleSignUp(form, dateString, clinicDate, timeZone, clinicInfo, links) {
-  updateStudents();
-  form.setTitle(`${clinicInfo.type} Clinic Sign Up -- ${dateString} from ${clinicInfo.time}`);
-  form.setDescription(`${Utilities.formatDate(clinicDate, timeZone, 'MM/dd/YYYY')};${clinicInfo.typeCode}`);
-  form.setAcceptingResponses(true);
-
-  const formCloseDate = new Date();
-  formCloseDate.setDate(formCloseDate.getDate() + (SIGNUP_DAYS.LEAD - SIGNUP_DAYS.MANAGE));
-
-  const htmlBody = HtmlService.createTemplateFromFile('SignUpEmail');
-  htmlBody.type = clinicInfo.type;
-  htmlBody.date = dateString;
-  htmlBody.close_date = Utilities.formatDate(formCloseDate, timeZone, 'EEEE, MMMM dd, YYYY');
-  htmlBody.time = clinicInfo.time;
-  htmlBody.link = links.form;
-  htmlBody.feedback_email = GET_INFO("Webmaster", "email");
-  const emailHtml = htmlBody.evaluate().getContent();
-
-  MailApp.sendEmail({
-    to: DEBUG ? GET_INFO("Webmaster", "email") : GET_INFO("ClassLists", "email"),
-    subject: `Sign up for ROC on ${dateString}`,
-    replyTo: GET_INFO("ROCManager", "email"),
-    htmlBody: emailHtml,
-    name: "ROC Scheduling Assistant"
-  });
-
-  if (DEBUG) {
-    Logger.log(`DEBUG: Sign-up email sent to Webmaster instead of class lists for ROC on ${dateString}`);
-  }
-}
-
-/**
- * Handles the preliminary match process for a clinic.
- * Closes the sign-up form and updates the match list.
- * @param {GoogleAppsScript.Forms.Form} form - The Google Form to update.
- * @param {string} dateString - Formatted date string for the clinic.
- * @param {Date} clinicDate - Date object for the clinic.
- * @param {Object} clinicInfo - Object containing clinic information.
- */
-function handlePreliminaryMatch(form, dateString, clinicDate, clinicInfo) {
-  form.setTitle("Sign Ups Closed.");
-  form.setDescription("Thank you for your interest. Please check back when another clinic is closer.");
-  form.setAcceptingResponses(false);
-  updateMatchList(clinicDate, clinicInfo.typeCode, clinicInfo.rooms, clinicInfo.address);
-}
-
-/**
- * Handles the final match process for a clinic.
- * Creates and sends the final match PDF to participants.
- * @param {string} dateString - Formatted date string for the clinic.
- * @param {Date} clinicDate - Date object for the clinic.
- * @param {Object} clinicInfo - Object containing clinic information.
- */
-function handleFinalMatch(dateString, clinicDate, clinicInfo) {
-  const file = makeMatchPDF(clinicDate, clinicInfo.typeCode);
-  
-  const htmlBody = HtmlService.createTemplateFromFile('MatchEmail');
-  htmlBody.type = clinicInfo.type;
-  htmlBody.date = dateString;
-  htmlBody.time = clinicInfo.time;
-  htmlBody.feedback_email = GET_INFO("Webmaster", "email");
-  const emailHtml = htmlBody.evaluate().getContent();
-
-  MailApp.sendEmail({
-    to: DEBUG ? GET_INFO("Webmaster", "email") : GET_INFO("ClassLists", "email"),
-    subject: `Match list for ROC on ${dateString}`,
-    replyTo: GET_INFO("ROCManager", "email"),
-    htmlBody: emailHtml,
-    attachments: [file.getAs(MimeType.PDF)],
-    name: "ROC Scheduling Assistant"
-  });
-
-  if (DEBUG) {
-    Logger.log(`DEBUG: Final match list email sent to Webmaster instead of class lists for ROC on ${dateString}`);
   }
 }
 
@@ -523,7 +398,7 @@ function updateMatchList(date, type, num_rooms, address) {
   }
 
   // Send email with the preliminary match list for Managers to update
-  const htmlBody = HtmlService.createTemplateFromFile('MatchPrelimEmail');
+  const htmlBody = HtmlService.createTemplateFromFile('PrelimMatchEmail');
   const timeZone = `GMT-${date.getTimezoneOffset() / 60}`; // Note: This won't work east of Prime Meridian
   const dateString = Utilities.formatDate(date, timeZone, 'EEEE, MMMM dd, YYYY');
   const linkMatch = `https://docs.google.com/spreadsheets/d/${SHEETS_ID.MATCH}/edit?usp=sharing`;
@@ -549,52 +424,6 @@ function updateMatchList(date, type, num_rooms, address) {
   }
 
   FormApp.getActiveForm().deleteAllResponses();
-}
-
-/**
- * Creates a PDF of the match list for a given clinic date and type.
- * 
- * @param {Date} date - The date of the clinic.
- * @param {string} type_code - The code representing the clinic type.
- * @returns {GoogleAppsScript.Drive.File} The created PDF file.
- */
-function makeMatchPDF(date, type_code) {
-  // PDF Creation https://developers.google.com/apps-script/samples/automations/generate-pdfs
-  const pdfName = `MatchList_${type_code}_${date.toISOString().split('T')[0]}.pdf`;
-  const sheet = SpreadsheetApp.openById(SHEETS_ID.MATCH).getSheets()[0];
-
-  const fr = 0, fc = 0, lc = 4, lr = 30;
-  const url = "https://docs.google.com/spreadsheets/d/" + SHEETS_ID.MATCH + "/export" +
-    "?format=pdf&" +
-    "size=7&" +
-    "fzr=true&" +
-    "portrait=true&" +
-    "fitw=true&" +
-    "gridlines=false&" +
-    "printtitle=false&" +
-    "top_margin=0.25&" +
-    "bottom_margin=0.25&" +
-    "left_margin=0.25&" +
-    "right_margin=0.25&" +
-    "sheetnames=false&" +
-    "pagenum=UNDEFINED&" +
-    "attachment=true&" +
-    "gid=" + sheet.getSheetId() + '&' +
-    "r1=" + fr + "&c1=" + fc + "&r2=" + lr + "&c2=" + lc;
-
-  const params = { method: "GET", headers: { "authorization": "Bearer " + ScriptApp.getOAuthToken() } };
-  const blob = UrlFetchApp.fetch(url, params).getBlob().setName(pdfName);
-
-  // Gets the folder in Drive where the PDFs are stored.
-  const folder = DriveApp.getFoldersByName("MatchListsROC").next();
-
-  // Not entirely sure of this is necessary or if the next file query is
-  const pdfFile = folder.createFile(blob);
-  //return pdfFile;
-
-  var file = DriveApp.getFilesByName(pdfName).next();
-
-  return file;
 }
 
 /**
@@ -650,135 +479,4 @@ function onFormSubmit(e) {
   } else {
     Logger.log(`DEBUG: Would update TRACKER sheet for ${name}: Signups incremented from ${currentSignups} to ${currentSignups + 1}`);
   }
-}
-
-/**
- * Builds a list of student names from the tracker spreadsheet.
- * 
- * This function performs the following tasks:
- * 1. Iterates through all sheets in the tracker spreadsheet.
- * 2. Extracts last names and first names from each sheet.
- * 3. Combines names with year tags (e.g., MS1, MS2) based on sheet index.
- * 4. Sorts the final list of names alphabetically.
- * 
- * @returns {string[]} An array of formatted student names (e.g., "Last, First (MS1)").
- */
-function buildNameList() {
-  const sheets = SpreadsheetApp.openById(SHEETS_ID.TRACKER).getSheets();
-  const studentNames = [];
-
-  sheets.forEach((sheet, index) => {
-    const yearTag = getYearTag(index);
-    if (!yearTag) return;
-
-    const lastNames = sheet.getRange(2, TRACK_INDEX.LASTNAME, sheet.getLastRow() - 1, 1).getValues();
-    const firstNames = sheet.getRange(2, TRACK_INDEX.FIRSTNAME, sheet.getLastRow() - 1, 1).getValues();
-
-    lastNames.forEach((lastName, rowIndex) => {
-      if (lastName[0] !== "") {
-        const newName = `${lastName[0]}, ${firstNames[rowIndex][0]} (${yearTag})`;
-        if (studentNames.includes(newName)) {
-          Logger.log(`Duplicate: ${newName}`);
-        } else {
-          studentNames.push(newName);
-        }
-      }
-    });
-  });
-
-  return studentNames.sort();
-}
-
-/**
- * Finds the sheet index and row index for a given student name.
- * 
- * @param {string} name - The formatted name of the student (e.g., "Last, First (MS1)").
- * @returns {number[]} An array containing [sheetIndex, rowIndex] of the student's entry.
- */
-function findCellByName(name) {
-  const sheets = SpreadsheetApp.openById(SHEETS_ID.TRACKER).getSheets();
-  const [lastName, firstName] = name.slice(0, -6).split(", ");
-
-  for (let sheetIndex = 0; sheetIndex < sheets.length; sheetIndex++) {
-    const sheet = sheets[sheetIndex];
-    const lastNames = sheet.getRange(2, TRACK_INDEX.LASTNAME, sheet.getLastRow() - 1, 1).getValues();
-    const firstNames = sheet.getRange(2, TRACK_INDEX.FIRSTNAME, sheet.getLastRow() - 1, 1).getValues();
-
-    const rowIndex = lastNames.findIndex((row, index) => 
-      row[0] === lastName && firstNames[index][0] === firstName
-    );
-
-    if (rowIndex !== -1) {
-      return [sheetIndex, rowIndex + 2]; // +2 because we start from row 2 and array is 0-indexed
-    }
-  }
-
-  Logger.log(`Did not find name: ${name}`);
-  return [-1, -1];
-}
-
-/**
- * Updates the list of student names in the Google Form.
- * 
- * This function retrieves the current list of student names and
- * updates the corresponding form item with these names as choices.
- */
-function updateStudents() {
-  const form = FormApp.getActiveForm();
-  const namesList = form.getItemById(NAMES_ID).asListItem();
-  const studentNames = buildNameList();
-  namesList.setChoiceValues(studentNames);
-}
-
-/**
- * Returns the year tag based on the sheet index.
- * 
- * @param {number} sheetNum - The index of the sheet.
- * @returns {string|number} The year tag (e.g., "MS1", "PA2") or 0 if invalid.
- */
-function getYearTag(sheetNum) {
-  const tags = ["MS1", "MS2", "MS3", "MS4", "PA1", "PA2"];
-  return sheetNum < tags.length ? tags[sheetNum] : 0;
-}
-
-/**
- * Retrieves information about a specific position from the People sheet.
- * 
- * @param {string} position - The position to look up (e.g., "CEO", "ROCManager", "ClassLists").
- * @param {string} info - The type of information to retrieve ("name" or "email").
- * @returns {string} The requested information (name or email) for the specified position.
- * 
- * This function:
- * 1. Opens the People sheet using the SHEET_PEOPLE ID.
- * 2. Uses a switch statement to find the correct row for the given position.
- * 3. Retrieves the name and email from the appropriate cells.
- * 4. Returns the requested information (name or email) based on the 'info' parameter.
- * 
- * If the position is not found or the info type is invalid, it returns an error message.
- */
-function GET_INFO(position, info) {
-  const sheet = SpreadsheetApp.openById(SHEETS_ID.PEOPLE).getSheets()[0];
-  const positions = {
-    CEO: PEOPLE_INDEX.CEO,
-    COO: PEOPLE_INDEX.COO,
-    Webmaster: PEOPLE_INDEX.WEBMASTER,
-    GenPedManager: PEOPLE_INDEX.GEN_PED,
-    WomenManager: PEOPLE_INDEX.WOMEN,
-    GeriDermManager: PEOPLE_INDEX.GERI_DERM,
-    DIMEManager: PEOPLE_INDEX.DIME,
-    ROCManager: PEOPLE_INDEX.ROC,
-    SMManager: PEOPLE_INDEX.SM,
-    LayCouns: PEOPLE_INDEX.LAY,
-    ClassLists: PEOPLE_INDEX.CLASS
-  };
-
-  const rowIndex = positions[position];
-  if (!rowIndex) {
-    return info === "email" ? "Email Not Found" : "Name Not Found";
-  }
-
-  const name = sheet.getRange(rowIndex, 2).getValue();
-  const email = sheet.getRange(rowIndex, 3).getValue();
-
-  return info.toLowerCase() === "email" ? email : name;
 }

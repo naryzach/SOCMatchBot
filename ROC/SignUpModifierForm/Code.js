@@ -12,8 +12,9 @@ const SIGN_INDEX = {
   WATCHER: 6,
   TRANSPORT: 7,
   COMMENTS: 8,
-  DATE: 9,
-  CLINIC_TYPE: 10
+  ELECTIVE: 9,
+  DATE: 10,
+  CLINIC_TYPE: 11
 };
 
 // Match tracker sheet column indices

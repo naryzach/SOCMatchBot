@@ -38,18 +38,6 @@ const SIGN_INDEX = {
   CLINIC_TYPE: 9
 };
 
-// Match tracker sheet
-const TRACK_INDEX = {
-  LASTNAME: 1,
-  FIRSTNAME: 2,
-  SIGNUPS: 3,
-  MATCHES: 4,
-  NOSHOW: 5,
-  CXLLATE: 6,
-  CXLEARLY: 7,
-  DATE: 8
-};
-
 // Match list sheet
 const MATCH_INDEX = {
   NAMES: 13,
@@ -66,21 +54,6 @@ const MATCH_INDEX = {
 const DATE_INDEX = {
   ROOMS: "C2",
   DEFAULT_ROOMS: "10"
-};
-
-// People sheet
-const PEOPLE_INDEX = {
-  CEO: 2,
-  COO: 3,
-  WEBMASTER: 4,
-  GEN_PED: 5,
-  WOMEN: 6,
-  GERI_DERM: 7,
-  DIME: 8,
-  LAY: 9,
-  ROC: 10,
-  SM: 11,
-  CLASS: 12
 };
 
 // NOTES:
@@ -168,89 +141,12 @@ function updateForm() {
     };
 
     if (clinicDate.valueOf() === checkingDates.signUp.valueOf()) {
-      sendSignUpEmail(form, dateString, clinicDate, timeZone, links);
+      handleSignUp(form, dateString, clinicDate, timeZone, links);
     } else if (clinicDate.valueOf() === checkingDates.manage.valueOf()) {
-      sendPreliminaryMatchList(form, dateString, clinicDate, spreadsheet);
+      handlePreliminaryMatch(form, dateString, clinicDate, spreadsheet);
     } else if (clinicDate.valueOf() === checkingDates.close.valueOf()) {
-      sendFinalMatchList(dateString, clinicDate);
+      handleFinalMatch(dateString, clinicDate);
     }
-  }
-}
-
-/**
- * Sends sign-up email and updates the form for an upcoming clinic.
- * @param {GoogleAppsScript.Forms.Form} form - The Google Form to update.
- * @param {string} dateString - Formatted date string for the clinic.
- * @param {Date} clinicDate - Date object for the clinic.
- * @param {string} timeZone - Time zone string for date formatting.
- * @param {Object} links - Object containing various relevant URLs.
- */
-function sendSignUpEmail(form, dateString, clinicDate, timeZone, links) {
-  updateStudents();
-  form.setTitle(`Street Medicine Clinic Sign Up -- ${dateString} from 8am - 12pm`);
-  form.setDescription(Utilities.formatDate(clinicDate, timeZone, 'MM/dd/YYYY'));
-  form.setAcceptingResponses(true);
-
-  const formCloseDate = new Date();
-  formCloseDate.setDate(formCloseDate.getDate() + (SIGNUP_DAYS.LEAD - SIGNUP_DAYS.MANAGE));
-
-  const htmlBody = HtmlService.createTemplateFromFile('SignUpEmail');
-  htmlBody.date = dateString;
-  htmlBody.close_date = Utilities.formatDate(formCloseDate, timeZone, 'EEEE, MMMM dd, YYYY');
-  htmlBody.link = links.form;
-  htmlBody.feedback_email = GET_INFO("Webmaster", "email");
-
-  MailApp.sendEmail({
-    to: DEBUG ? GET_INFO("Webmaster", "email") : GET_INFO("ClassLists", "email"),
-    subject: `Sign up for Street Medicine Clinic on ${dateString}`,
-    replyTo: GET_INFO("SMManager", "email"),
-    htmlBody: htmlBody.evaluate().getContent(),
-    name: "Street Medicine Scheduling Assistant"
-  });
-
-  if (DEBUG) {
-    Logger.log(`DEBUG: Sign-up email sent to Webmaster instead of class lists for clinic on ${dateString}`);
-  }
-}
-
-/**
- * Sends preliminary match list and closes the sign-up form.
- * @param {GoogleAppsScript.Forms.Form} form - The Google Form to update.
- * @param {string} dateString - Formatted date string for the clinic.
- * @param {Date} clinicDate - Date object for the clinic.
- * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} spreadsheet - The spreadsheet containing clinic information.
- */
-function sendPreliminaryMatchList(form, dateString, clinicDate, spreadsheet) {
-  form.setTitle("Sign Ups Closed.");
-  form.setDescription("Thank you for your interest. Please check back when another clinic is closer.");
-  form.setAcceptingResponses(false);
-
-  const numRooms = parseInt(spreadsheet.getRange(DATE_INDEX.ROOMS).getValue()) || DATE_INDEX.DEFAULT_ROOMS;
-  updateMatchList(clinicDate, numRooms);
-}
-
-/**
- * Sends final match list with PDF attachment to participants.
- * @param {string} dateString - Formatted date string for the clinic.
- * @param {Date} clinicDate - Date object for the clinic.
- */
-function sendFinalMatchList(dateString, clinicDate) {
-  const file = makeMatchPDF(clinicDate);
-  const htmlBody = HtmlService.createTemplateFromFile('MatchEmail');
-  htmlBody.date = dateString;
-  htmlBody.feedback_email = GET_INFO("Webmaster", "email");
-
-  MailApp.sendEmail({
-    to: DEBUG ? GET_INFO("Webmaster", "email") : GET_INFO("ClassLists", "email"),
-    subject: `Match list for Street Medicine Clinic on ${dateString}`,
-    replyTo: GET_INFO("SMManager", "email"),
-    htmlBody: htmlBody.evaluate().getContent(),
-    attachments: [file.getAs(MimeType.PDF)],
-    name: "Street Medicine Scheduling Assistant"
-  });
-
-  if (DEBUG) {
-    Logger.log(`DEBUG: Final match list email sent to Webmaster instead of class lists for clinic on ${dateString}`);
   }
 }
 
@@ -435,59 +331,6 @@ function updateMatchList(date, numRooms) {
 }
 
 /**
- * Creates a PDF of the match list for a given date.
- * @param {Date} date - The date of the clinic.
- * @return {GoogleAppsScript.Drive.File} The created PDF file.
- */
-function makeMatchPDF(date) {
-  // Format the PDF name
-  const pdfName = `MatchList_${date.toISOString().split('T')[0]}.pdf`;
-  
-  // Get the match sheet
-  const sheet = SpreadsheetApp.openById(SHEETS_ID.MATCH).getSheets()[0];
-
-  // Define the range for the PDF
-  const firstRow = 0, firstCol = 0, lastCol = 4, lastRow = 30;
-
-  // Construct the URL for PDF export
-  const url = `https://docs.google.com/spreadsheets/d/${SHEETS_ID.MATCH}/export` +
-    '?format=pdf&' +
-    'size=7&' +
-    'fzr=true&' +
-    'portrait=true&' +
-    'fitw=true&' +
-    'gridlines=false&' +
-    'printtitle=false&' +
-    'top_margin=0.25&' +
-    'bottom_margin=0.25&' +
-    'left_margin=0.25&' +
-    'right_margin=0.25&' +
-    'sheetnames=false&' +
-    'pagenum=UNDEFINED&' +
-    'attachment=true&' +
-    `gid=${sheet.getSheetId()}&` +
-    `r1=${firstRow}&c1=${firstCol}&r2=${lastRow}&c2=${lastCol}`;
-
-  // Set up parameters for the URL fetch
-  const params = { 
-    method: "GET", 
-    headers: { "authorization": `Bearer ${ScriptApp.getOAuthToken()}` } 
-  };
-
-  // Fetch the PDF as a blob
-  const blob = UrlFetchApp.fetch(url, params).getBlob().setName(`${pdfName}.pdf`);
-
-  // Get the folder where PDFs are stored
-  const folder = DriveApp.getFoldersByName("MatchListsSM").next();
-
-  // Create the PDF file in the folder
-  folder.createFile(blob);
-
-  // Return the created file
-  return DriveApp.getFilesByName(`${pdfName}.pdf`).next();
-}
-
-/**
  * Handles form submission event.
  * @param {GoogleAppsScript.Events.FormsOnFormSubmit} e - The form submit event object.
  */
@@ -507,51 +350,26 @@ function onFormSubmit(e) {
   const lastRow = signUpSheet.getLastRow();
   
   // Check for resubmission or invalid date
-  if (isResubmissionOrInvalidDate(signUpSheet, name, date, lastRow)) {
+  const clinicDate = new Date(date);
+  if (isNaN(clinicDate.valueOf())) {
+    Logger.log(`Invalid date: ${date} for ${name}`);
     return;
+  }
+
+  const usedNames = signUpSheet.getRange(2, SIGN_INDEX.NAME, lastRow - 1).getValues();
+  const usedDates = signUpSheet.getRange(2, SIGN_INDEX.DATE, lastRow - 1).getValues();
+
+  for (let i = 0; i < lastRow - 2; i++) {
+    if (name === usedNames[i][0] && clinicDate.valueOf() === usedDates[i][0].valueOf()) {
+      Logger.log(`Resubmission detected for ${name}`);
+      return;
+    }
   }
 
   // Set the date to the date of the clinic
   signUpSheet.getRange(lastRow + 1, SIGN_INDEX.DATE).setValue(date);
 
   // Update the sign-up counter in the tracker
-  updateSignUpCounter(trackerSheets, name);
-}
-
-/**
- * Checks if the submission is a resubmission or has an invalid date.
- * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet - The sign-up sheet.
- * @param {string} name - The name of the submitter.
- * @param {string} date - The clinic date.
- * @param {number} lastRow - The last row with data in the sheet.
- * @return {boolean} True if resubmission or invalid date, false otherwise.
- */
-function isResubmissionOrInvalidDate(sheet, name, date, lastRow) {
-  const usedNames = sheet.getRange(2, SIGN_INDEX.NAME, lastRow - 1).getValues();
-  const usedDates = sheet.getRange(2, SIGN_INDEX.DATE, lastRow - 1).getValues();
-  const clinicDate = new Date(date);
-
-  if (isNaN(clinicDate.valueOf())) {
-    Logger.log(`Invalid date: ${date} for ${name}`);
-    return true;
-  }
-
-  for (let i = 0; i < lastRow - 2; i++) {
-    if (name === usedNames[i][0] && clinicDate.valueOf() === usedDates[i][0].valueOf()) {
-      Logger.log(`Resubmission detected for ${name}`);
-      return true;
-    }
-  }
-
-  return false;
-}
-
-/**
- * Updates the sign-up counter for the given name in the tracker sheets.
- * @param {GoogleAppsScript.Spreadsheet.Sheet[]} sheets - The tracker sheets.
- * @param {string} name - The name of the person to update.
- */
-function updateSignUpCounter(sheets, name) {
   const nameArr = findCellByName(name);
   if (!nameArr) {
     Logger.log(`Could not find ${name} in tracker sheets`);
@@ -559,132 +377,12 @@ function updateSignUpCounter(sheets, name) {
   }
 
   const [sheetIndex, rowIndex] = nameArr;
-  const cell = sheets[sheetIndex].getRange(rowIndex + 1, TRACK_INDEX.SIGNUPS);
+  const cell = trackerSheets[sheetIndex].getRange(rowIndex + 1, TRACK_INDEX.SIGNUPS);
   const currentValue = cell.getValue() || 0;
   
   if (!DEBUG) {
     cell.setValue(currentValue + 1);
   } else {
     Logger.log(`DEBUG: Would update TRACKER sheet for ${name}: Signups incremented from ${currentValue} to ${currentValue + 1}`);
-  }
-}
-
-/**
- * Builds and returns a sorted list of student names from the tracker sheets.
- * @return {string[]} An array of formatted student names.
- */
-function buildNameList() {
-  const sheets = SpreadsheetApp.openById(SHEETS_ID.TRACKER).getSheets();
-  const studentNames = new Set(); // Use a Set to automatically handle duplicates
-
-  sheets.forEach((sheet, sheetIndex) => {
-    const yearTag = getYearTag(sheetIndex);
-    if (!yearTag) return;
-
-    const lastRow = sheet.getLastRow();
-    const namesRange = sheet.getRange(2, TRACK_INDEX.LASTNAME, lastRow - 1, 2);
-    const namesValues = namesRange.getValues();
-
-    namesValues.forEach(([lastName, firstName]) => {
-      if (lastName) {
-        const formattedName = `${lastName}, ${firstName} (${yearTag})`;
-        if (studentNames.has(formattedName)) {
-          Logger.log(`Duplicate: ${formattedName}`);
-        } else {
-          studentNames.add(formattedName);
-        }
-      }
-    });
-  });
-
-  const sortedNames = Array.from(studentNames).sort();
-  Logger.log(sortedNames);
-  return sortedNames;
-}
-
-/**
- * Finds a student's sheet index and row index given their formatted name.
- * @param {string} name - The formatted name of the student (e.g., "Doe, John (MS2)").
- * @returns {number[]|null} An array containing [sheetIndex, rowIndex], or null if not found.
- */
-function findCellByName(name) {
-  const sheets = SpreadsheetApp.openById(SHEETS_ID.TRACKER).getSheets();
-  const [lastName, firstName] = name.slice(0, -6).split(", ");
-
-  for (let sheetIndex = 0; sheetIndex < sheets.length; sheetIndex++) {
-    const sheet = sheets[sheetIndex];
-    const lastNames = sheet.getRange(2, TRACK_INDEX.LASTNAME, sheet.getLastRow() - 1, 1).getValues();
-    const firstNames = sheet.getRange(2, TRACK_INDEX.FIRSTNAME, sheet.getLastRow() - 1, 1).getValues();
-
-    for (let rowIndex = 0; rowIndex < lastNames.length; rowIndex++) {
-      if (firstNames[rowIndex][0] === firstName && lastNames[rowIndex][0] === lastName) {
-        return [sheetIndex, rowIndex + 1]; // +1 because we started from row 2
-      }
-    }
-  }
-
-  Logger.log(`Did not find name: ${name}`);
-  return null;
-}
-
-/**
- * Updates the name list for the Google Form.
- */
-function updateStudents() {
-  const form = FormApp.getActiveForm();
-  const namesList = form.getItemById(NAMES_ID).asListItem();
-  const studentNames = buildNameList();
-  namesList.setChoiceValues(studentNames);
-}
-
-/**
- * Returns the year tag based on the sheet index.
- * @param {number} sheetIndex - The index of the sheet.
- * @returns {string} The year tag (e.g., "MS1", "PA2"), or an empty string if invalid.
- */
-function getYearTag(sheetIndex) {
-  const tags = ["MS1", "MS2", "MS3", "MS4", "PA1", "PA2"];
-  return sheetIndex < tags.length ? tags[sheetIndex] : "";
-}
-
-/**
- * Retrieves information about a person based on their position.
- * @param {string} position - The position of the person (e.g., "CEO", "COO", "Webmaster", etc.).
- * @param {string} info - The type of information to retrieve ("name" or "email").
- * @returns {string} The requested information or an error message if not found.
- */
-function GET_INFO(position, info) {
-  const sheet = SpreadsheetApp.openById(SHEETS_ID.PEOPLE).getSheets()[0];
-  const positionMap = {
-    CEO: PEOPLE_INDEX.CEO,
-    COO: PEOPLE_INDEX.COO,
-    Webmaster: PEOPLE_INDEX.WEBMASTER,
-    GenPedManager: PEOPLE_INDEX.GEN_PED,
-    WomenManager: PEOPLE_INDEX.WOMEN,
-    GeriDermManager: PEOPLE_INDEX.GERI_DERM,
-    DIMEManager: PEOPLE_INDEX.DIME,
-    ROCManager: PEOPLE_INDEX.ROC,
-    SMManager: PEOPLE_INDEX.SM,
-    LayCouns: PEOPLE_INDEX.LAY,
-    ClassLists: PEOPLE_INDEX.CLASS
-  };
-
-  // Check if the position exists in our map
-  if (!(position in positionMap)) {
-    return "Position Not Found";
-  }
-
-  const row = positionMap[position];
-  const name = sheet.getRange(row, 2).getValue();
-  const email = sheet.getRange(row, 3).getValue();
-
-  // Return the requested information
-  switch (info.toLowerCase()) {
-    case "email":
-      return email;
-    case "name":
-      return name;
-    default:
-      return "Bad Lookup";
   }
 }
