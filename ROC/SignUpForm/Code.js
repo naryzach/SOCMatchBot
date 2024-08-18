@@ -2,68 +2,87 @@
 // Run createTriggers() after Match Tracker is updated
 // Update clinic dates for proper flow of automation
 
-// SHEET ID's
-const SHEET_TRACKER = "10e68w1DkTm4kdXJIcMUeIUH5_KFP1uUgKv5SB5RHXDU"; // match tracker
-const SHEET_DATES = "1eztpAJ1JSWps9SiHl6pHV_6y6pWZPZ_i9tP029nw7JQ"; // sheet of clinic dates
-const SHEET_MATCH = "1FW1wiYIG9LvCEgFfpgf6c9GyKljNQbwEZkoRUE3lYWg"; // match list sheet
-const SHEET_SIGN = "1FNhu-fzahjrlL0K--Mh-gSxBmDqqYWrBPG1VBOjbttQ"; // sheet associated with form
-const SHEET_PEOPLE = "1R7sskPPhNi6Mhitz1-FHESdJhaJuKHM_o8oUJHSp9EQ"// sheet for contact info and names
-const FORM_OFFICIAL = "1FAIpQLSdeCfV1VzuK3clXnHaExcLQ88ekVoKWMMvTKql97WFr8p9WZQ" // The form to send (not the editing form)
-const FORM_MOD = "1FAIpQLSfPWCXGNPvNqVWOz2y0GYORi2_jxhtHU-vnvveXsZoUX8E54w" // for the sign-up modification form
-const NAMES_ID = "2021179574"; // data-item-id in HTML -- doesn't change on copy
+const DEBUG = false;
 
-// Form hyperparameters //
-// Sign up timing
-const SIGNUP_LEAD_DAYS = 7 // 7 days before clinic
-const SIGNUP_MANAGE_DAYS = 3 // 3 days before clinic -- for sending prelim match to managers
-const SIGNUP_CLOSE_DAYS = 2 // 2 days before clinic
+// Sheet IDs
+const SHEETS_ID = {
+  TRACKER: "10e68w1DkTm4kdXJIcMUeIUH5_KFP1uUgKv5SB5RHXDU",  // Match tracker
+  DATES: "1eztpAJ1JSWps9SiHl6pHV_6y6pWZPZ_i9tP029nw7JQ",    // Clinic dates
+  MATCH: "1FW1wiYIG9LvCEgFfpgf6c9GyKljNQbwEZkoRUE3lYWg",    // Match list
+  SIGN: "1FNhu-fzahjrlL0K--Mh-gSxBmDqqYWrBPG1VBOjbttQ",     // Form responses
+  PEOPLE: "1R7sskPPhNi6Mhitz1-FHESdJhaJuKHM_o8oUJHSp9EQ"    // Contact info
+};
 
-// Sign up sheet indexing
-const SIGN_NAME_NDX = 2
-const SIGN_PTS_ALONE_NDX = 3
-const SIGN_SPANISH_NDX = 4
-const SIGN_SOC_POS_NDX = 5
-const SIGN_FOLLOW_NDX = 6
-const SIGN_CARPOOL_NDX = 7
-const SIGN_COMMENTS_NDX = 8
-const SIGN_DATE_NDX = 9
-const SIGN_CLINIC_TYPE_NDX = 10
+const FORMS_ID = {
+  OFFICIAL: "1FAIpQLSdeCfV1VzuK3clXnHaExcLQ88ekVoKWMMvTKql97WFr8p9WZQ",  // Main form
+  MOD: "1FAIpQLSfPWCXGNPvNqVWOz2y0GYORi2_jxhtHU-vnvveXsZoUX8E54w",      // Modification form
+};
 
-// Match tracker sheet indexing
-const TRACK_LASTNAME_NDX = 1
-const TRACK_FIRSTNAME_NDX = 2
-const TRACK_SIGNUPS_NDX = 3
-const TRACK_MATCHES_NDX = 4
-const TRACK_NOSHOW_NDX = 5
-const TRACK_CXLLATE_NDX = 6
-const TRACK_CXLEARLY_NDX = 7
-const TRACK_DATE_NDX = 8
+const NAMES_ID = "2021179574";  // data-item-id for names list
 
-// Match list sheet indexing
-const MATCH_NAMES = 15;
-const MATCH_MANGERS = "A8";
-const MATCH_TITLE = "A1";
-const MATCH_DATE = "A3";
-const MATCH_TIME = "C3";
-const MATCH_ADDRESS = "A5";
-const MATCH_CHALK = "D12";
-const MATCH_PHYS = "A12";
-const MATCH_INTERPRET = "C8";
-const MATCH_SHADOW = "D8";
-const MATCH_VOLUNT = "C12";
+// Signup timing (in days)
+const SIGNUP_DAYS = {
+  LEAD: 7,    // Open signup
+  MANAGE: 3,  // Send preliminary match to manager
+  CLOSE: 2    // Close signup
+};
 
-// People sheet indexing
-const PEOPLE_CEO = 2
-const PEOPLE_C0O = 3
-const PEOPLE_WEBMASTER = 4
-const PEOPLE_GEN_PED = 5
-const PEOPLE_WOMEN = 6
-const PEOPLE_GERI_DERM = 7
-const PEOPLE_DIME = 8
-const PEOPLE_LAY = 9
-const PEOPLE_ROC = 10
-const PEOPLE_SM = 11
-const PEOPLE_CLASS = 12
+// Column indices
+// Sign up sheet
+const SIGN_INDEX = {
+  NAME: 2,
+  PTS_ALONE: 3,
+  SPANISH: 4,
+  SOC_POS: 5,
+  FOLLOW: 6,
+  CARPOOL: 7,
+  COMMENTS: 8,
+  ELECTIVE: 9,
+  DATE: 10,
+  CLINIC_TYPE: 11
+};
+
+// Match tracker sheet
+const TRACK_INDEX = {
+  LASTNAME: 1,
+  FIRSTNAME: 2,
+  SIGNUPS: 3,
+  MATCHES: 4,
+  NOSHOW: 5,
+  CXLLATE: 6,
+  CXLEARLY: 7,
+  DATE: 8
+};
+
+// Match list sheet
+const MATCH_INDEX = {
+  NAMES: 15,
+  MANAGERS: "A8",
+  TITLE: "A1",
+  DATE: "A3",
+  TIME: "C3",
+  ADDRESS: "A5",
+  CHALK: "D12",
+  PHYS: "A12",
+  INTERPRET: "C8",
+  SHADOW: "D8",
+  VOLUNT: "C12"
+};
+
+// People sheet
+const PEOPLE_INDEX = {
+  CEO: 2,
+  COO: 3,
+  WEBMASTER: 4,
+  GEN_PED: 5,
+  WOMEN: 6,
+  GERI_DERM: 7,
+  DIME: 8,
+  LAY: 9,
+  ROC: 10,
+  SM: 11,
+  CLASS: 12
+};
 
 // NOTES:
 //  Code infers year based on sheet order (MS1,2,3,4,PA1,2); could update but is already pretty simple
@@ -72,520 +91,480 @@ const PEOPLE_CLASS = 12
 
 // *** ---------------------------------- *** // 
 
-// Create a form submit installable trigger
-// using Apps Script.
+/**
+ * Creates form submit and time-based triggers if they don't already exist.
+ */
 function createTriggers() {
-  // Get the form object.
-  var form = FormApp.getActiveForm();
+  const form = FormApp.getActiveForm();
+  const currentTriggers = ScriptApp.getProjectTriggers();
 
-  // Check if triggers are already set 
-  var currentTriggers = ScriptApp.getProjectTriggers();
-  if(currentTriggers.length > 0) {
+  if (currentTriggers.length > 0) {
     Logger.log("Triggers already set.");
     return;
   }
 
-  // Create triggers
-  ScriptApp.newTrigger("onFormSubmit").forForm(form).onFormSubmit().create();
-  ScriptApp.newTrigger("updateFormDate").timeBased().atHour(12).everyDays(1).create();
+  ScriptApp.newTrigger("onFormSubmit")
+    .forForm(form)
+    .onFormSubmit()
+    .create();
 
-  // Update name list
+  ScriptApp.newTrigger("updateForm")
+    .timeBased()
+    .atHour(12)
+    .everyDays(1)
+    .create();
+
   updateStudents();
 }
 
-// Remove triggers
+/**
+ * Removes all triggers associated with the current project.
+ */
 function discontinueTriggers() {
-  var triggers = ScriptApp.getProjectTriggers();
-  for (var i = 0; i < triggers.length; i++) {
-    ScriptApp.deleteTrigger(triggers[i]);
-  }
+  ScriptApp.getProjectTriggers().forEach(trigger => ScriptApp.deleteTrigger(trigger));
 }
 
-// Change the title of the form to coincide with the date of clinic
-function updateFormDate() {
-  var form = FormApp.getActiveForm();
-  var spreadsheet = SpreadsheetApp.openById(SHEET_DATES);
+/**
+ * Updates the form date and manages the signup process.
+ * This function is triggered daily to check upcoming clinics and manage the signup process.
+ */
+function updateForm() {
+  const form = FormApp.getActiveForm();
+  const spreadsheet = SpreadsheetApp.openById(SHEETS_ID.DATES);
+  const dateColumn = spreadsheet.getRange('A:A');
+  dateColumn.setNumberFormat('dd-MM-yyyy');
 
-  // Format time data
-  var date_column = spreadsheet.getRange('A:A');
-  date_column.setNumberFormat('dd-MM-yyyy');
+  const today = new Date();
+  const checkingDates = {
+    signUp: new Date(today.getFullYear(), today.getMonth(), today.getDate() + SIGNUP_DAYS.LEAD),
+    close: new Date(today.getFullYear(), today.getMonth(), today.getDate() + SIGNUP_DAYS.CLOSE),
+    manage: new Date(today.getFullYear(), today.getMonth(), today.getDate() + SIGNUP_DAYS.MANAGE)
+  };
 
-  // Get date,the date in 2 days, and the date in 5 days
-  var date = new Date();
-  var checkingDate = new Date(date.getFullYear(), date.getMonth(), date.getDate() + SIGNUP_LEAD_DAYS);
-  var checkingDateEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate() + SIGNUP_CLOSE_DAYS);
-  var checkingDateManage = new Date(date.getFullYear(), date.getMonth(), date.getDate() + SIGNUP_MANAGE_DAYS);
+  const lastRow = spreadsheet.getSheets()[0]
+    .getRange(1, 1)
+    .getNextDataCell(SpreadsheetApp.Direction.DOWN)
+    .getRow();
 
-  // Set variables for the loop
-  var cell;
-  var c_Date = new Date();
-  var type = "";
-  var address = "";
-  var time = "";
-  var num_rooms = 0;
-  var clinic_type_code = "";
+  for (let i = 2; i <= lastRow; i++) {
+    const clinicDate = new Date(spreadsheet.getRange(`A${i}`).getValue());
+    const timeZone = `GMT-${clinicDate.getTimezoneOffset() / 60}`; // Note: This won't work east of Prime Meridian
+    const dateString = Utilities.formatDate(clinicDate, timeZone, 'EEEE, MMMM dd, YYYY');
 
-  // Get the last row of the table
-  let ss_end = spreadsheet.getSheets()[0]
-      .getRange(1, 1)
-      .getNextDataCell(SpreadsheetApp.Direction.DOWN)
-      .getRow();
-  for (var i = 2; i <= ss_end; i++) {
-    cell = spreadsheet.getRange("A" + i.toString());
-    c_Date = new Date(cell.getValue().toString());
+    const clinicInfo = getClinicInfo(clinicDate, spreadsheet.getRange(`B${i}`).getValue());
 
-    // Get the clinic time
-    switch (c_Date.getDay()) {
-      case 0: 
-        time = "9pm - 3pm"
-        break;
-      case 6:
-        time = "9am - 1pm"
-        break;
-      default:
-        time = "Unknown"
-        Logger.log("Issue with time extraction");
-    }
+    const links = {
+      form: `https://docs.google.com/forms/d/e/${FORMS_ID.OFFICIAL}/viewform?usp=sf_link`,
+      formMod: `https://docs.google.com/forms/d/e/${FORMS_ID.MOD}/viewform?usp=sf_link`,
+      date: `https://docs.google.com/spreadsheets/d/${SHEETS_ID.DATES}/edit?usp=sharing`,
+      track: `https://docs.google.com/spreadsheets/d/${SHEETS_ID.TRACKER}/edit?usp=sharing`,
+      match: `https://docs.google.com/spreadsheets/d/${SHEETS_ID.MATCH}/edit?usp=sharing`
+    };
 
-    // Get clinic type
-    clinic_type_code = spreadsheet.getRange("B" + i.toString()).getValue().toString();
-    switch (clinic_type_code) {
-      case "Y":
-        type = "Yerington";
-        address = "South Lyon Physicians Clinic, 213 S Whitacre St., Yerington,NV";
-        num_rooms = 6;
-        break;
-      case "SS":
-        type = "Silver Springs";
-        address = "3595 Hwy 50, Suite 3 (In Lahontan Medical Complex), Silver Springs, NV";
-        num_rooms = 5;
-        break;
-      case "F":
-        type = "Fallon";
-        address = "485 West B St Suite 101, Fallon, NV";
-        num_rooms = 3;
-        break;
-      default:
-        type = "Unknown";
-        address = "Unknown";
-        num_rooms = 0;
-        Logger.log("Problem with clinic type");
-    }
-
-    // Format time
-    var tz = "GMT-" + String(c_Date.getTimezoneOffset()/60) // will not work east of Prime Meridian
-    var date_string  = Utilities.formatDate(c_Date, tz, 'EEEE, MMMM dd, YYYY');
-
-    var formLink = "https://docs.google.com/forms/d/e/" + FORM_OFFICIAL + "/viewform?usp=sf_link";
-
-    // If 5 days out, update the Form
-    if (c_Date.valueOf() == checkingDate.valueOf()) {
-      // Update Form information
-      updateStudents();
-      form.setTitle(type + " Clinic Sign Up -- " + date_string + " from " + time);
-      form.setDescription(Utilities.formatDate(c_Date, tz, 'MM/dd/YYYY') + ";" + clinic_type_code);
-      form.setAcceptingResponses(true);
-      var formCloseDate = date;
-      formCloseDate.setDate(formCloseDate.getDate() + (SIGNUP_LEAD_DAYS-SIGNUP_MANAGE_DAYS));
-
-      // Send email prompting sign ups from HTML format
-      var html_body = HtmlService.createTemplateFromFile('SignUpEmail');  
-      html_body.type = type;
-      html_body.date = date_string;
-      html_body.close_date = Utilities.formatDate(formCloseDate, tz, 'EEEE, MMMM dd, YYYY');
-      html_body.time = time;
-      html_body.link = formLink;
-      html_body.feedback_email = GET_INFO("Webmaster", "email");
-      var email_html = html_body.evaluate().getContent();
-      MailApp.sendEmail({
-        to: GET_INFO("ClassLists", "email"),
-        subject:  "Sign up for ROC on " + date_string,
-        replyTo: GET_INFO("ROCManager", "email"),
-        htmlBody: email_html,
-        name: "ROC Scheduling Assistant"
-      });
-    
-    // if 3 days out, update the match list and send to managers
-    } else if (c_Date.valueOf() == checkingDateManage.valueOf()) {
-      // Update form
-      form.setTitle("Sign Ups Closed.");
-      form.setDescription("Thank you for your interest. Please check back when another clinic is closer.");
-      //form.setDescription(Utilities.formatDate(c_Date, tz, 'MM/dd/YYYY'));
-      form.setAcceptingResponses(false);
-      updateMatchList(checkingDateManage, clinic_type_code, num_rooms, address);
-
-      // Email for Managers is sent inside the Match List Updater
-    
-    // if 2 days out, send the official match list out
-    } else if (c_Date.valueOf() == checkingDateEnd.valueOf()) {
-      var file = makeMatchPDF(c_Date, clinic_type_code); // make the PDF of the match list
-      
-      // Format email from HTML file
-      var html_body = HtmlService.createTemplateFromFile('MatchEmail');  
-      html_body.type = type;
-      html_body.date = date_string;
-      html_body.time = time;
-      html_body.feedback_email = GET_INFO("Webmaster", "email");
-      var email_html = html_body.evaluate().getContent();
-      MailApp.sendEmail({
-        to: GET_INFO("ClassLists", "email"),
-        subject:  "Match list for ROC on " + date_string,
-        replyTo: GET_INFO("ROCManager", "email"),
-        htmlBody: email_html,
-        attachments: [file.getAs(MimeType.PDF)],
-        name: "ROC Scheduling Assistant"
-      });
+    if (clinicDate.valueOf() === checkingDates.signUp.valueOf()) {
+      handleSignUp(form, dateString, clinicDate, timeZone, clinicInfo, links);
+    } else if (clinicDate.valueOf() === checkingDates.manage.valueOf()) {
+      handlePreliminaryMatch(form, dateString, clinicDate, clinicInfo);
+    } else if (clinicDate.valueOf() === checkingDates.close.valueOf()) {
+      handleFinalMatch(dateString, clinicDate, clinicInfo);
     }
   }
 }
 
-// Create match list and apply changes to Sheets file
+/**
+ * Retrieves clinic information based on the date and type code.
+ * @param {Date} date - The date of the clinic.
+ * @param {string} typeCode - A code representing the clinic type (Y, SS, or F).
+ * @returns {Object} An object containing clinic information (type, address, rooms, time, typeCode).
+ */
+function getClinicInfo(date, typeCode) {
+  const clinicTypes = {
+    Y: { type: "Yerington", address: "South Lyon Physicians Clinic, 213 S Whitacre St., Yerington,NV", rooms: 6 },
+    SS: { type: "Silver Springs", address: "3595 Hwy 50, Suite 3 (In Lahontan Medical Complex), Silver Springs, NV", rooms: 5 },
+    F: { type: "Fallon", address: "485 West B St Suite 101, Fallon, NV", rooms: 3 }
+  };
+
+  const clinicInfo = clinicTypes[typeCode] || { type: "Unknown", address: "Unknown", rooms: 0 };
+  clinicInfo.time = date.getDay() === 0 ? "9am - 3pm" : date.getDay() === 6 ? "9am - 1pm" : "Unknown";
+  clinicInfo.typeCode = typeCode;
+
+  return clinicInfo;
+}
+
+/**
+ * Handles the sign-up process for a clinic.
+ * Updates the form, sends sign-up emails, and manages form responses.
+ * @param {GoogleAppsScript.Forms.Form} form - The Google Form to update.
+ * @param {string} dateString - Formatted date string for the clinic.
+ * @param {Date} clinicDate - Date object for the clinic.
+ * @param {string} timeZone - Time zone string for date formatting.
+ * @param {Object} clinicInfo - Object containing clinic information.
+ * @param {Object} links - Object containing various relevant URLs.
+ */
+function handleSignUp(form, dateString, clinicDate, timeZone, clinicInfo, links) {
+  updateStudents();
+  form.setTitle(`${clinicInfo.type} Clinic Sign Up -- ${dateString} from ${clinicInfo.time}`);
+  form.setDescription(`${Utilities.formatDate(clinicDate, timeZone, 'MM/dd/YYYY')};${clinicInfo.typeCode}`);
+  form.setAcceptingResponses(true);
+
+  const formCloseDate = new Date();
+  formCloseDate.setDate(formCloseDate.getDate() + (SIGNUP_DAYS.LEAD - SIGNUP_DAYS.MANAGE));
+
+  const htmlBody = HtmlService.createTemplateFromFile('SignUpEmail');
+  htmlBody.type = clinicInfo.type;
+  htmlBody.date = dateString;
+  htmlBody.close_date = Utilities.formatDate(formCloseDate, timeZone, 'EEEE, MMMM dd, YYYY');
+  htmlBody.time = clinicInfo.time;
+  htmlBody.link = links.form;
+  htmlBody.feedback_email = GET_INFO("Webmaster", "email");
+  const emailHtml = htmlBody.evaluate().getContent();
+
+  MailApp.sendEmail({
+    to: DEBUG ? GET_INFO("Webmaster", "email") : GET_INFO("ClassLists", "email"),
+    subject: `Sign up for ROC on ${dateString}`,
+    replyTo: GET_INFO("ROCManager", "email"),
+    htmlBody: emailHtml,
+    name: "ROC Scheduling Assistant"
+  });
+
+  if (DEBUG) {
+    Logger.log(`DEBUG: Sign-up email sent to Webmaster instead of class lists for ROC on ${dateString}`);
+  }
+}
+
+/**
+ * Handles the preliminary match process for a clinic.
+ * Closes the sign-up form and updates the match list.
+ * @param {GoogleAppsScript.Forms.Form} form - The Google Form to update.
+ * @param {string} dateString - Formatted date string for the clinic.
+ * @param {Date} clinicDate - Date object for the clinic.
+ * @param {Object} clinicInfo - Object containing clinic information.
+ */
+function handlePreliminaryMatch(form, dateString, clinicDate, clinicInfo) {
+  form.setTitle("Sign Ups Closed.");
+  form.setDescription("Thank you for your interest. Please check back when another clinic is closer.");
+  form.setAcceptingResponses(false);
+  updateMatchList(clinicDate, clinicInfo.typeCode, clinicInfo.rooms, clinicInfo.address);
+}
+
+/**
+ * Handles the final match process for a clinic.
+ * Creates and sends the final match PDF to participants.
+ * @param {string} dateString - Formatted date string for the clinic.
+ * @param {Date} clinicDate - Date object for the clinic.
+ * @param {Object} clinicInfo - Object containing clinic information.
+ */
+function handleFinalMatch(dateString, clinicDate, clinicInfo) {
+  const file = makeMatchPDF(clinicDate, clinicInfo.typeCode);
+  
+  const htmlBody = HtmlService.createTemplateFromFile('MatchEmail');
+  htmlBody.type = clinicInfo.type;
+  htmlBody.date = dateString;
+  htmlBody.time = clinicInfo.time;
+  htmlBody.feedback_email = GET_INFO("Webmaster", "email");
+  const emailHtml = htmlBody.evaluate().getContent();
+
+  MailApp.sendEmail({
+    to: DEBUG ? GET_INFO("Webmaster", "email") : GET_INFO("ClassLists", "email"),
+    subject: `Match list for ROC on ${dateString}`,
+    replyTo: GET_INFO("ROCManager", "email"),
+    htmlBody: emailHtml,
+    attachments: [file.getAs(MimeType.PDF)],
+    name: "ROC Scheduling Assistant"
+  });
+
+  if (DEBUG) {
+    Logger.log(`DEBUG: Final match list email sent to Webmaster instead of class lists for ROC on ${dateString}`);
+  }
+}
+
+/**
+ * Updates the match list for a clinic based on sign-ups and participant scores.
+ * This function handles the preliminary matching process, including:
+ * - Gathering sign-ups for the current clinic date
+ * - Calculating match scores for each participant
+ * - Generating a sorted match list
+ * - Updating the match list spreadsheet
+ * - Sending a preliminary match list email to managers
+ *
+ * @param {Date} date - The date of the clinic
+ * @param {string} type - The type code of the clinic (e.g., "Y" for Yerington)
+ * @param {number} num_rooms - The number of available rooms for the clinic
+ * @param {string} address - The address of the clinic
+ */
 function updateMatchList(date, type, num_rooms, address) {
-  var sheet_match = SpreadsheetApp.openById(SHEET_MATCH).getSheets()[0];
-  var sheets_track = SpreadsheetApp.openById(SHEET_TRACKER).getSheets();
-  var sheet_sign = SpreadsheetApp.openById(SHEET_SIGN).getSheets()[0];
-
-  var largeNameList = [];
+  const sheetMatch = SpreadsheetApp.openById(SHEETS_ID.MATCH).getSheets()[0];
+  const sheetsTrack = SpreadsheetApp.openById(SHEETS_ID.TRACKER).getSheets();
+  const sheetSign = SpreadsheetApp.openById(SHEETS_ID.SIGN).getSheets()[0];
 
   // Gather names of signups for current dated clinic
-  let lastRow = sheet_sign
-      .getRange(1, 1)
-      .getNextDataCell(SpreadsheetApp.Direction.DOWN)
-      .getRow();
-  var sign_dates = sheet_sign.getRange(2, SIGN_DATE_NDX, lastRow).getValues();
-  var sign_names = sheet_sign.getRange(2, SIGN_NAME_NDX, lastRow).getValues();
-  for(var i = 0; i < lastRow-1; i++) {
-    if (date.valueOf() == sign_dates[i][0].valueOf()) {
-      largeNameList.push(sign_names[i][0]);
+  const lastRow = sheetSign.getLastRow();
+  const signDates = sheetSign.getRange(2, SIGN_INDEX.DATE, lastRow - 1, 1).getValues();
+  const signNames = sheetSign.getRange(2, SIGN_INDEX.NAME, lastRow - 1, 1).getValues();
+  
+  const largeNameList = signDates.reduce((acc, dateRow, index) => {
+    if (dateRow[0].valueOf() === date.valueOf()) {
+      acc.push(signNames[index][0]);
     }
-  }
+    return acc;
+  }, []);
 
-  var nameArr = [];
-  var matchScore = 0;
-  var matches = 0;
-  var signUps = 0;
-  var noShow = 0;
-  var cxlEarly = 0;
-  var cxlLate = 0;
-  var lastDate = "";
-  var ptsAlone = "No";
-  var socPos = "No";
-  var spanish = "No";
-  var namesWithScores = {};
+  const namesWithScores = {};
 
   // Generate match list
-  for (name in largeNameList) {
-    matchScore = 0; 
-
-    // Find which row the name is found on the sign up sheet
-    var name_row_ndx = 0;
-    for(var i = 0; i < lastRow-1; i++) {
-      if (date.valueOf() == sign_dates[i][0].valueOf()) {
-        if (sign_names[i][0] == largeNameList[name]) {
-          name_row_ndx = i + 2; // List index offset from sheet
-        }
-      }
-    }
-
-    // Grab data on all sign ups
-    nameArr = findCellByName(largeNameList[name])
+  largeNameList.forEach(name => {
+    const nameRowIndex = signNames.findIndex(row => row[0] === name) + 2;
+    const nameArr = findCellByName(name);
     
-    // Check for errors reading names
-    if (nameArr[0] == -1) {
-      Logger.log("Name error");
-      Logger.log(largeNameList[name]);
-      if (largeNameList[name].slice(-3) == "CXL") {
-        // Grab new name w/o "CXL"
-        nameArr = findCellByName(largeNameList[name].slice(0,-3))
-        if (nameArr[0] == -1) continue;
+    if (nameArr[0] === -1) {
+      Logger.log(`Name error: ${name}`);
+      if (name.endsWith("CXL")) {
+        const newName = name.slice(0, -3);
+        const newNameArr = findCellByName(newName);
+        if (newNameArr[0] === -1) return;
 
         // Update the sign up counter if cancellation
-        var tmp = sheets_track[nameArr[0]].getRange(nameArr[1] + 1, TRACK_CXLEARLY_NDX).getValue();
-        if (tmp == "") { 
-          tmp = 0;
+        const cxlEarlyCell = sheetsTrack[newNameArr[0]].getRange(newNameArr[1] + 1, TRACK_INDEX.CXLEARLY);
+        const cxlEarlyValue = cxlEarlyCell.getValue() || 0;
+        if (!DEBUG) {
+          cxlEarlyCell.setValue(cxlEarlyValue + 1);
+        } else {
+          Logger.log(`DEBUG: Would update TRACKER sheet for ${newName}: CXLEARLY incremented from ${cxlEarlyValue} to ${cxlEarlyValue + 1}`);
         }
-        sheets_track[nameArr[0]].getRange(nameArr[1] + 1, TRACK_CXLEARLY_NDX).setValue(parseInt(tmp) + 1);
       }
-
-      // Do not try to match that name
-      continue;
-    }
-    
-    signUps = parseInt(sheets_track[nameArr[0]].getRange(nameArr[1] + 1, TRACK_SIGNUPS_NDX).getValue());
-    matches = parseInt(sheets_track[nameArr[0]].getRange(nameArr[1] + 1, TRACK_MATCHES_NDX).getValue());
-    noShow = parseInt(sheets_track[nameArr[0]].getRange(nameArr[1] + 1, TRACK_NOSHOW_NDX).getValue());
-    cxlLate = parseInt(sheets_track[nameArr[0]].getRange(nameArr[1] + 1, TRACK_CXLLATE_NDX).getValue());
-    cxlEarly = parseInt(sheets_track[nameArr[0]].getRange(nameArr[1] + 1, TRACK_CXLEARLY_NDX).getValue());
-    lastDate = sheets_track[nameArr[0]].getRange(nameArr[1] + 1, TRACK_DATE_NDX).getValue();
-
-    // Grab form submission data
-    socPos = sheet_sign.getRange(name_row_ndx, SIGN_SOC_POS_NDX).getValue();
-    spanish = sheet_sign.getRange(name_row_ndx, SIGN_SPANISH_NDX).getValue();
-
-    // Caluclate match score
-    matchScore = signUps - matches;
-
-    // Elective and SOC position additions
-    if (socPos == "Yes" && (nameArr[0] == 0 || nameArr[0] == 1)) { //MS1/2s -- second check is unneccesary
-      //matchScore += 100; // rank SOC members in a hierarchy
-      matchScore *= 2; // Only slightly bias SOC members rather than rank in a hierarchy
-    }
-    if (spanish == "Yes") {
-      matchScore += 35; // give priority to spanish speakers (within each year)
+      return;
     }
 
-    // Add points based on seniority
-    switch (nameArr[0]) {
-      case 0:
-        break;
-      case 1:
-        matchScore += 50; //second year
-        break;
-      case 2:
-        matchScore += 500; //third year
-        break;
-      case 3:
-        matchScore += 1000; //fourth year
-        break;
-      case 4:
-        break;
-      case 5:
-        break;
+    const trackSheet = sheetsTrack[nameArr[0]];
+    const trackRow = nameArr[1] + 1;
+
+    const signUps = parseInt(trackSheet.getRange(trackRow, TRACK_INDEX.SIGNUPS).getValue()) || 0;
+    const matches = parseInt(trackSheet.getRange(trackRow, TRACK_INDEX.MATCHES).getValue()) || 0;
+    const noShow = parseInt(trackSheet.getRange(trackRow, TRACK_INDEX.NOSHOW).getValue()) || 0;
+    const cxlLate = parseInt(trackSheet.getRange(trackRow, TRACK_INDEX.CXLLATE).getValue()) || 0;
+    const cxlEarly = parseInt(trackSheet.getRange(trackRow, TRACK_INDEX.CXLEARLY).getValue()) || 0;
+    const lastDate = trackSheet.getRange(trackRow, TRACK_INDEX.DATE).getValue();
+
+    const socPos = sheetSign.getRange(nameRowIndex, SIGN_INDEX.SOC_POS).getValue();
+    const spanish = sheetSign.getRange(nameRowIndex, SIGN_INDEX.SPANISH).getValue();
+
+    let matchScore = signUps - matches;
+
+    // Add points for SOC position
+    if (socPos === "Yes" && nameArr[0] <= 1) {
+      matchScore *= 2;
     }
 
-    // Never been matched addition
-    var daysSince = 0;
-    if (lastDate == "") {
+    // Add points for Spanish
+    if (spanish === "Yes") {
+      matchScore += 35;
+    }
+
+    // Add points for years of experience
+    matchScore += [0, 50, 500, 1000, 0, 0][nameArr[0]] || 0;
+
+    if (!lastDate) {
       matchScore += 25;
-    // Add fractional points to help sort by last match
     } else {
-      daysSince = (new Date - new Date(lastDate)) / (1000*60*60*24);
-      matchScore += daysSince/365;
+      const daysSince = (new Date() - new Date(lastDate)) / (1000 * 60 * 60 * 24);
+      matchScore += daysSince / 365;
     }
 
-    // Cancellation penalty
-    if (!isNaN(noShow)) {
-      matchScore -= noShow * 3;
-    }
-    if (!isNaN(cxlLate)) {
-      matchScore -= cxlLate * 2;
-    }
-    if (!isNaN(cxlEarly)) {
-      matchScore -= cxlEarly;
-    }
+    matchScore -= (noShow * 3) + (cxlLate * 2) + cxlEarly;
 
-    // Create dictionary of name (key) and score (value)
-    namesWithScores[largeNameList[name]] = matchScore;
-  }
-
-  Logger.log(namesWithScores);
-
-  // Generate match list based on points
-  var matchList = [];
-  var sorted = Object.keys(namesWithScores).map(function(key) {
-    return [key, namesWithScores[key]];
+    namesWithScores[name] = matchScore;
   });
-  sorted.sort(function(first, second) {
-    return second[1] - first[1];
-  });
-  // Need to check date for last match
-  for (i = 0; i < (sorted.length < (num_rooms * 2) ? sorted.length : (num_rooms * 2)); i++) {
-    matchList.push(sorted[i][0]);
-  }
 
-  Logger.log(matchList);
-  //GmailApp.sendEmail(ERROR_EMAIL, "Match List", matchList);
+  Logger.log("Match scores:", namesWithScores);
 
-  // Clear Match List Sheet file names
-  for (i = 0; i < 25; i++) { // 25 is an arbitrary choice. Should be more than max possible
-    sheet_match.getRange(i + MATCH_NAMES, 1).setValue("");
-    sheet_match.getRange(i + MATCH_NAMES, 2).setValue("");
-    sheet_match.getRange(i + MATCH_NAMES, 3).setValue("");
-    sheet_match.getRange(i + MATCH_NAMES, 1, 1, 3).setBorder(false, false, false, false, false, false);
-  }
-  sheet_match.getRange(MATCH_CHALK).setValue("");
-  sheet_match.getRange(MATCH_INTERPRET).setValue("");
-  sheet_match.getRange(MATCH_SHADOW).setValue("");
-  sheet_match.getRange(MATCH_PHYS).setValue("");
-  sheet_match.getRange(MATCH_VOLUNT).setValue("");
+  // Generate sorted match list based on scores
+  const sortedMatchList = Object.entries(namesWithScores)
+    .sort(([, scoreA], [, scoreB]) => scoreB - scoreA)
+    .map(([name]) => name)
+    .slice(0, num_rooms * 2);
+
+  Logger.log("Sorted match list:", sortedMatchList);
+
+  // Clear Match List Sheet
+  const clearRange = sheetMatch.getRange(MATCH_INDEX.NAMES, 1, 25, 3);
+  clearRange.clearContent().setBorder(false, false, false, false, false, false);
+
+  // Clear specific fields
+  const fieldsToClean = [MATCH_INDEX.CHALK, MATCH_INDEX.INTERPRET, MATCH_INDEX.SHADOW, MATCH_INDEX.PHYS, MATCH_INDEX.VOLUNT];
+  fieldsToClean.forEach(field => sheetMatch.getRange(field).clearContent());
 
   // Update Match List Sheet header
-  var dayOfWeek = date.getDay();
-  var clinic_time = "";
-  switch (dayOfWeek) {
-    case 0: 
-      clinic_time = "9AM - 3PM";
-      break;
-    case 6:
-      clinic_time = "9AM - 1PM";
-      break;
-    default:
-      clinic_time = "Unknown";
-      Logger.log("Issue with time extraction");
+  const clinicInfo = {
+    time: date.getDay() === 0 ? "9AM - 3PM" : date.getDay() === 6 ? "9AM - 1PM" : "Unknown",
+    title: {
+      "Y": "Yerington ROC Clinic",
+      "SS": "Silver Springs ROC Clinic",
+      "F": "Fallon ROC Clinic"
+    }[type] || "Unknown"
+  };
+
+  if (clinicInfo.time === "Unknown") {
+    Logger.log("Issue with time extraction");
+  }
+  if (clinicInfo.title === "Unknown") {
+    Logger.log("Problem with clinic type");
   }
 
-  var clinic_title = "";
-  switch (type) {
-    case "Y":
-      clinic_title = "Yerington ROC Clinic";
-      break;
-    case "SS":
-      clinic_title = "Silver Springs ROC Clinic";
-      break;
-    case "F":
-      clinic_title = "Fallon ROC Clinic";
-      break;
-    default:
-      clinic_title = "Unknown";
-      Logger.log("Problem with clinic type");
-  }
-  sheet_match.getRange(MATCH_TITLE).setValue(clinic_title);
-  sheet_match.getRange(MATCH_DATE).setValue(date);
-  sheet_match.getRange(MATCH_TIME).setValue(clinic_time);
-  sheet_match.getRange(MATCH_ADDRESS).setValue(address);
+  sheetMatch.getRange(MATCH_INDEX.TITLE).setValue(clinicInfo.title);
+  sheetMatch.getRange(MATCH_INDEX.DATE).setValue(date);
+  sheetMatch.getRange(MATCH_INDEX.TIME).setValue(clinicInfo.time);
+  sheetMatch.getRange(MATCH_INDEX.ADDRESS).setValue(address);
 
-  // Update Match List Sheet file
-  var firstName = "";
-  var lastName = "";
-  var name_row_ndx = 0;
-  var actuallyMatched = [];
+  // Update Match List Sheet
+  let firstName, lastName, nameRowIndex;
+  const actuallyMatched = [];
+  const rollOverProviders = [];
 
-  Logger.log("Number of rooms");
-  Logger.log(num_rooms);
+  Logger.log(`Number of rooms: ${num_rooms}`);
+  Logger.log(`Number of providers: ${sortedMatchList.length}`);
 
-  Logger.log("Number of providers");
-  Logger.log(matchList.length);
-
-  var roll_over_providers = [];
   num_rooms -= 1; // DIME takes a room space
-  var num_slots = matchList.length < num_rooms ? matchList.length : num_rooms;
+  const numSlots = Math.min(sortedMatchList.length, num_rooms);
 
-  Logger.log("Number of slots");
-  Logger.log(num_slots);
+  Logger.log(`Number of slots: ${numSlots}`);
 
   // Fill rooms with people who can see patients alone
-  for (i = 0; i < num_slots; i++) {
-    // Get index of name on sign up sheet. Repetative but keeps match sorting cleaner
-    name_row_ndx = 2;
-    for(var j = 0; j < lastRow-1; j++) {
-      if (date.valueOf() == sign_dates[j][0].valueOf() && sign_names[j][0] == matchList[i])
-        name_row_ndx += j; // List index offset from sheet
+  for (let i = 0; i < numSlots; i++) {
+    // Find the index of the name on the sign-up sheet
+    nameRowIndex = 2;
+    for (let j = 0; j < lastRow - 1; j++) {
+      if (date.valueOf() == signDates[j][0].valueOf() && signNames[j][0] == sortedMatchList[i]) {
+        nameRowIndex += j; // List index offset from sheet
+        break;
+      }
     }
-    ptsAlone = sheet_sign.getRange(name_row_ndx, SIGN_PTS_ALONE_NDX).getValue();
+    const ptsAlone = sheetSign.getRange(nameRowIndex, SIGN_INDEX.PTS_ALONE).getValue();
 
-    if (ptsAlone == "Yes") {
-      actuallyMatched.push(matchList[i]);
-      nameArr = findCellByName(matchList[i]);
-      firstName = sheets_track[nameArr[0]].getRange(nameArr[1] + 1, TRACK_FIRSTNAME_NDX).getValue();
-      lastName = sheets_track[nameArr[0]].getRange(nameArr[1] + 1, TRACK_LASTNAME_NDX).getValue();
-      sheet_match.getRange(i + MATCH_NAMES, 1).setValue("Room " + (i + 1).toString());
-      sheet_match.getRange(i + MATCH_NAMES, 2).setValue(firstName + " " + lastName + ", " + getYearTag(nameArr[0]));
-      sheet_match.getRange(i + MATCH_NAMES, 3).setValue("_____________________________________________\n_____________________________________________\n_____________________________________________");
-      sheet_match.getRange(i + MATCH_NAMES, 1, 1, 3).setBorder(true, true, true, true, true, true);
+    if (ptsAlone === "Yes") {
+      actuallyMatched.push(sortedMatchList[i]);
+      const nameArr = findCellByName(sortedMatchList[i]);
+      firstName = sheetsTrack[nameArr[0]].getRange(nameArr[1] + 1, TRACK_INDEX.FIRSTNAME).getValue();
+      lastName = sheetsTrack[nameArr[0]].getRange(nameArr[1] + 1, TRACK_INDEX.LASTNAME).getValue();
+      
+      // Update match list sheet with provider information
+      sheetMatch.getRange(i + MATCH_INDEX.NAMES, 1).setValue(`Room ${i + 1}`);
+      sheetMatch.getRange(i + MATCH_INDEX.NAMES, 2).setValue(`${firstName} ${lastName}, ${getYearTag(nameArr[0])}`);
+      sheetMatch.getRange(i + MATCH_INDEX.NAMES, 3).setValue("_____________________________________________\n_____________________________________________\n_____________________________________________");
+      sheetMatch.getRange(i + MATCH_INDEX.NAMES, 1, 1, 3).setBorder(true, true, true, true, true, true);
     } else {
-      roll_over_providers.push(matchList.splice(i,1)[0]);
-      i -= 1;
+      rollOverProviders.push(sortedMatchList.splice(i, 1)[0]);
+      i--; // Adjust index since we removed an item
     }
-    if (matchList.length <= (i+1)) {num_slots = matchList.length; break;}
+    if (sortedMatchList.length <= (i+1)) {numSlots = sortedMatchList.length; break;}
   }
 
-  Logger.log("Roll over providers")
-  Logger.log(roll_over_providers)
+  Logger.log(`Roll over providers: ${rollOverProviders}`);
 
   // Fill the second room spot
-  var matchListP2 = roll_over_providers.concat(matchList.slice(num_slots));
-  num_slots2 = matchListP2.length < num_slots ? matchListP2.length : num_slots;
-  var prev_name = "";
+  const matchListP2 = rollOverProviders.concat(sortedMatchList.slice(numSlots));
+  const numSlots2 = Math.min(matchListP2.length, numSlots);
 
-  Logger.log("Number of slots (for 2nd pass)");
-  Logger.log(num_slots2);
+  Logger.log(`Number of slots (for 2nd pass): ${numSlots2}`);
 
-  for (i = 0; i < num_slots2; i++) {
+  // Add second provider to each room
+  for (let i = 0; i < numSlots2; i++) {
     actuallyMatched.push(matchListP2[i]);
-    nameArr = findCellByName(matchListP2[i]);
-    firstName = sheets_track[nameArr[0]].getRange(nameArr[1] + 1, TRACK_FIRSTNAME_NDX).getValue();
-    lastName = sheets_track[nameArr[0]].getRange(nameArr[1] + 1, TRACK_LASTNAME_NDX).getValue();
+    const nameArr = findCellByName(matchListP2[i]);
+    firstName = sheetsTrack[nameArr[0]].getRange(nameArr[1] + 1, TRACK_INDEX.FIRSTNAME).getValue();
+    lastName = sheetsTrack[nameArr[0]].getRange(nameArr[1] + 1, TRACK_INDEX.LASTNAME).getValue();
 
-    prev_name = sheet_match.getRange(i + MATCH_NAMES, 2).getValue();
-    sheet_match.getRange(i + MATCH_NAMES, 2).setValue(prev_name + "\n" + firstName + " " + lastName + ", " + getYearTag(nameArr[0]));
+    const prevName = sheetMatch.getRange(i + MATCH_INDEX.NAMES, 2).getValue();
+    sheetMatch.getRange(i + MATCH_INDEX.NAMES, 2).setValue(`${prevName}\n${firstName} ${lastName}, ${getYearTag(nameArr[0])}`);
   }
 
-  Logger.log("Match list part 2")
-  Logger.log(matchListP2)
+  Logger.log(`Match list part 2: ${matchListP2}`);
 
   // Add post-bac spaces
-  for (i = 0; i < num_slots+1; i++) { // Add room back for DIME
-    prev_name = sheet_match.getRange(i + MATCH_NAMES, 2).getValue();
-    sheet_match.getRange(i + MATCH_NAMES, 2).setValue(prev_name + "\nPost-bac: ");
+  for (let i = 0; i < numSlots + 1; i++) { // Add room back for DIME
+    const prevName = sheetMatch.getRange(i + MATCH_INDEX.NAMES, 2).getValue();
+    sheetMatch.getRange(i + MATCH_INDEX.NAMES, 2).setValue(`${prevName}\nPost-bac: `);
   }
 
   // Add DIME slot
-  sheet_match.getRange(num_slots + MATCH_NAMES, 1).setValue("DIME Providers");
-  sheet_match.getRange(num_slots + MATCH_NAMES, 3).setValue("_____________________________________________\n_____________________________________________\n_____________________________________________");
-  sheet_match.getRange(num_slots + MATCH_NAMES, 1, 1, 3).setBorder(true, true, true, true, true, true);
+  sheetMatch.getRange(numSlots + MATCH_INDEX.NAMES, 1).setValue("DIME Providers");
+  sheetMatch.getRange(numSlots + MATCH_INDEX.NAMES, 3).setValue("_____________________________________________\n_____________________________________________\n_____________________________________________");
+  sheetMatch.getRange(numSlots + MATCH_INDEX.NAMES, 1, 1, 3).setBorder(true, true, true, true, true, true);
 
-  // Update match stats
-  var comments = "";
-  var spanish = "";
-  var follow = "";
-  var carpool = "";
-  var manager_email_body = "";
-  for (name in actuallyMatched) {
-    nameArr = findCellByName(actuallyMatched[name])
-    var tmp = sheets_track[nameArr[0]].getRange(nameArr[1] + 1, TRACK_MATCHES_NDX).getValue();
-    if (tmp == "") tmp = 0;
-    sheets_track[nameArr[0]].getRange(nameArr[1] + 1, TRACK_MATCHES_NDX).setValue(parseInt(tmp) + 1);
-    sheets_track[nameArr[0]].getRange(nameArr[1] + 1, TRACK_DATE_NDX).setValue(date);
+  // Update match stats and gather sign-up information
+  let managerEmailBody = "";
+  const signUpInfo = {};
 
-    // Account for dietary restrictions and comments 
-    name_row_ndx = 2;
-    for(var j = 0; j < lastRow-1; j++) {
-      if (date.valueOf() == sign_dates[j][0].valueOf() && sign_names[j][0] == actuallyMatched[name])
-        name_row_ndx += j; // List index offset from sheet
+  for (const name of actuallyMatched) {
+    const nameArr = findCellByName(name);
+    const trackSheet = sheetsTrack[nameArr[0]];
+    const row = nameArr[1] + 1;
+
+    // Update match count and date
+    if (!DEBUG) {
+      let matches = trackSheet.getRange(row, TRACK_INDEX.MATCHES).getValue() || 0;
+      trackSheet.getRange(row, TRACK_INDEX.MATCHES).setValue(matches + 1);
+      trackSheet.getRange(row, TRACK_INDEX.DATE).setValue(date);
+    } else {
+      Logger.log(`DEBUG: Would update TRACKER sheet for ${name}: Matches incremented, Date set to ${date}`);
     }
-    spanish = sheet_sign.getRange(name_row_ndx, SIGN_SPANISH_NDX).getValue();
-    follow = sheet_sign.getRange(name_row_ndx, SIGN_FOLLOW_NDX).getValue();
-    carpool = sheet_sign.getRange(name_row_ndx, SIGN_CARPOOL_NDX).getValue();
-    comments = sheet_sign.getRange(name_row_ndx, SIGN_COMMENTS_NDX).getValue(); 
 
-    manager_email_body += actuallyMatched[name] + 
-        " -- Speaks Spanish: " + spanish +
-        "; Can have followers: " + follow + 
-        "; Carpool status: " + carpool + 
-        "; Comments: " + comments + "\n"; 
+    // Gather sign-up information
+    const nameRowIndex = signNames.findIndex(n => n[0] === name && signDates[n[0]].valueOf() === date.valueOf()) + 2;
+    if (nameRowIndex > 1) {
+      signUpInfo[name] = {
+        spanish: sheetSign.getRange(nameRowIndex, SIGN_INDEX.SPANISH).getValue(),
+        follow: sheetSign.getRange(nameRowIndex, SIGN_INDEX.FOLLOW).getValue(),
+        carpool: sheetSign.getRange(nameRowIndex, SIGN_INDEX.CARPOOL).getValue(),
+        comments: sheetSign.getRange(nameRowIndex, SIGN_INDEX.COMMENTS).getValue()
+      };
+
+      managerEmailBody += `${name} -- Speaks Spanish: ${signUpInfo[name].spanish}; Can have followers: ${signUpInfo[name].follow}; Carpool status: ${signUpInfo[name].carpool}; Comments: ${signUpInfo[name].comments}\n`;
+    }
   }
 
   // Send email with the preliminary match list for Managers to update
-  var html_body = HtmlService.createTemplateFromFile('MatchPrelimEmail');  
-  var tz = "GMT-" + String(date.getTimezoneOffset()/60) // will not work east of Prime Meridian
-  var date_string  = Utilities.formatDate(date, tz, 'EEEE, MMMM dd, YYYY');
-  var linkMatch = "https://docs.google.com/spreadsheets/d/" + SHEET_MATCH + "/edit?usp=sharing";
-  var linkTrack = "https://docs.google.com/spreadsheets/d/" + SHEET_TRACKER + "/edit?usp=sharing";
-  html_body.type = clinic_title;
-  html_body.date = date_string;
-  html_body.time = clinic_time;
-  html_body.link = linkMatch;
-  html_body.link_track = linkTrack;
-  html_body.sign_up_notes = manager_email_body;
-  var email_html = html_body.evaluate().getContent();
+  const htmlBody = HtmlService.createTemplateFromFile('MatchPrelimEmail');
+  const timeZone = `GMT-${date.getTimezoneOffset() / 60}`; // Note: This won't work east of Prime Meridian
+  const dateString = Utilities.formatDate(date, timeZone, 'EEEE, MMMM dd, YYYY');
+  const linkMatch = `https://docs.google.com/spreadsheets/d/${SHEETS_ID.MATCH}/edit?usp=sharing`;
+  const linkTrack = `https://docs.google.com/spreadsheets/d/${SHEETS_ID.TRACKER}/edit?usp=sharing`;
+
+  htmlBody.type = clinicInfo.title;
+  htmlBody.date = dateString;
+  htmlBody.time = clinicInfo.time;
+  htmlBody.link = linkMatch;
+  htmlBody.link_track = linkTrack;
+  htmlBody.sign_up_notes = managerEmailBody;
+
   MailApp.sendEmail({
-    to: GET_INFO("ROCManager", "email") + "," + GET_INFO("DIMEManager", "email") + "," + GET_INFO("LayCouns", "email"),
-    subject:  "ROC Match List (Prelim) and Notes from Sign-ups",
+    to: DEBUG ? GET_INFO("Webmaster", "email") : `${GET_INFO("ROCManager", "email")},${GET_INFO("DIMEManager", "email")},${GET_INFO("LayCouns", "email")}`,
+    subject: "ROC Match List (Prelim) and Notes from Sign-ups",
     replyTo: GET_INFO("Webmaster", "email"),
-    htmlBody: email_html,
+    htmlBody: htmlBody.evaluate().getContent(),
     name: "ROC Scheduling Assistant"
   });
+
+  if (DEBUG) {
+    Logger.log(`DEBUG: Preliminary match list email sent to Webmaster instead of ROC Manager, DIME Manager, and Lay Counselor for ROC on ${dateString}`);
+  }
 
   FormApp.getActiveForm().deleteAllResponses();
 }
 
+/**
+ * Creates a PDF of the match list for a given clinic date and type.
+ * 
+ * @param {Date} date - The date of the clinic.
+ * @param {string} type_code - The code representing the clinic type.
+ * @returns {GoogleAppsScript.Drive.File} The created PDF file.
+ */
 function makeMatchPDF(date, type_code) {
   // PDF Creation https://developers.google.com/apps-script/samples/automations/generate-pdfs
-  pdfName = "MatchList_" + type_code + "_" + (date).toISOString().split('T')[0] + ".pdf";
-  var sheet = SpreadsheetApp.openById(SHEET_MATCH).getSheets()[0];
+  const pdfName = `MatchList_${type_code}_${date.toISOString().split('T')[0]}.pdf`;
+  const sheet = SpreadsheetApp.openById(SHEETS_ID.MATCH).getSheets()[0];
 
   const fr = 0, fc = 0, lc = 4, lr = 30;
-  const url = "https://docs.google.com/spreadsheets/d/" + SHEET_MATCH + "/export" +
+  const url = "https://docs.google.com/spreadsheets/d/" + SHEETS_ID.MATCH + "/export" +
     "?format=pdf&" +
     "size=7&" +
     "fzr=true&" +
@@ -609,6 +588,7 @@ function makeMatchPDF(date, type_code) {
   // Gets the folder in Drive where the PDFs are stored.
   const folder = DriveApp.getFoldersByName("MatchListsROC").next();
 
+  // Not entirely sure of this is necessary or if the next file query is
   const pdfFile = folder.createFile(blob);
   //return pdfFile;
 
@@ -617,203 +597,188 @@ function makeMatchPDF(date, type_code) {
   return file;
 }
 
-// A function that is called by the form submit
-// trigger. The parameter e contains information
-// submitted by the user.
+/**
+ * Handles form submission for ROC clinic sign-ups.
+ * 
+ * This function is triggered when a form is submitted. It performs the following tasks:
+ * 1. Logs the submitted name for error checking.
+ * 2. Prevents resubmission for the same person and date.
+ * 3. Updates the sign-up sheet with the new entry.
+ * 4. Increments the sign-up counter in the tracker sheet for the participant.
+ * 
+ * @param {Object} e - The form submit event object containing response data.
+ */
 function onFormSubmit(e) {
-  var form = FormApp.getActiveForm();
-  var sheet = SpreadsheetApp.openById(SHEET_SIGN).getSheets()[0];
-  var sheets_tracker = SpreadsheetApp.openById(SHEET_TRACKER).getSheets();
+  const form = FormApp.getActiveForm();
+  const sheet = SpreadsheetApp.openById(SHEETS_ID.SIGN).getSheets()[0];
+  const sheetsTracker = SpreadsheetApp.openById(SHEETS_ID.TRACKER).getSheets();
   
-  // Get the response that was submitted.
-  var formResponse = e.response;
-  Logger.log(formResponse.getItemResponses()[0].getResponse()); // log name for error checking
+  const formResponse = e.response;
+  const name = formResponse.getItemResponses()[0].getResponse();
+  Logger.log(name); // Log name for error checking
 
-  var descr = form.getDescription().split(";");
-  var date = descr[0];
-  var clinic_type_code = descr[1];
-  let lastRow = sheet
-      .getRange(1, 1)
-      .getNextDataCell(SpreadsheetApp.Direction.DOWN)
-      .getRow();
+  const [date, clinicTypeCode] = form.getDescription().split(";");
+  const lastRow = sheet.getLastRow();
   
-  var itemResponses = formResponse.getItemResponses();
-  var name = itemResponses[0].getResponse();
-  var nameArr = findCellByName(name);
-
   // Prevent resubmission 
-  var usedNames = sheet.getRange(2, SIGN_NAME_NDX, lastRow-1).getValues();
-  var usedDates = sheet.getRange(2, SIGN_DATE_NDX, lastRow-1).getValues();
-  for(var i = 0; i < lastRow-2; i++) {
-    if (name == usedNames[i][0] && 
-        new Date(date).valueOf() == usedDates[i][0].valueOf()) {
-      Logger.log(name);
-      Logger.log("Form resubmission");
-      return;
-    } else if (isNaN(new Date(date).valueOf())) {
-      Logger.log(name);
-      Logger.log(date);
-      Logger.log("Bad date");
-      return;
-    }
-  }
-
-  // Set the date to the date of the clinic
-  sheet.getRange(lastRow, SIGN_DATE_NDX).setValue(date);
-  sheet.getRange(lastRow, SIGN_CLINIC_TYPE_NDX).setValue(clinic_type_code);
-
-  // Update the sign up counter
-  var tmp = sheets_tracker[nameArr[0]].getRange(nameArr[1] + 1, TRACK_SIGNUPS_NDX).getValue();
-  if (tmp == "") { 
-    tmp = 0;
-  }
-  sheets_tracker[nameArr[0]].getRange(nameArr[1] + 1, TRACK_SIGNUPS_NDX).setValue(parseInt(tmp) + 1);
-}
-
-// Build the list of names from the sheet
-function buildNameList () {
-  var sheets = SpreadsheetApp.openById(SHEET_TRACKER).getSheets();
-  var studentNames = [];
-  var yearTag = "";
+  const usedNames = sheet.getRange(2, SIGN_INDEX.NAME, lastRow - 1).getValues();
+  const usedDates = sheet.getRange(2, SIGN_INDEX.DATE, lastRow - 1).getValues();
   
-  for (var i = 0; i < sheets.length; i++) {
-    var sheet = sheets[i];
-    var lastNamesValues = sheet.getRange(2, TRACK_LASTNAME_NDX, sheet.getMaxRows() - 1).getValues();
-    var firstNamesValues = sheet.getRange(2, TRACK_FIRSTNAME_NDX, sheet.getMaxRows() - 1).getValues();
-
-    // convert the array ignoring empty cells
-    for(var j = 0; j < lastNamesValues.length; j++) {
-      if(lastNamesValues[j][0] != "") {
-        yearTag = getYearTag(i);
-        if (!yearTag) continue;
-        newName = lastNamesValues[j][0] + ", " + firstNamesValues[j][0] + " (" + yearTag + ")";
-        if (studentNames.includes(newName)) {
-          Logger.log("Duplicate: " + newName);
-        }
-        studentNames.push(newName);
-      }
+  for (let i = 0; i < lastRow - 2; i++) {
+    if (name === usedNames[i][0] && new Date(date).valueOf() === usedDates[i][0].valueOf()) {
+      Logger.log(`Form resubmission for ${name}`);
+      return;
     }
   }
-  studentNames = studentNames.sort();
-  Logger.log(studentNames);
-  return studentNames; 
+
+  if (isNaN(new Date(date).valueOf())) {
+    Logger.log(`Bad date for ${name}: ${date}`);
+    return;
+  }
+
+  // Update sign-up sheet
+  sheet.getRange(lastRow, SIGN_INDEX.DATE).setValue(date);
+  sheet.getRange(lastRow, SIGN_INDEX.CLINIC_TYPE).setValue(clinicTypeCode);
+
+  // Update tracker sheet
+  const nameArr = findCellByName(name);
+  const trackerCell = sheetsTracker[nameArr[0]].getRange(nameArr[1] + 1, TRACK_INDEX.SIGNUPS);
+  const currentSignups = trackerCell.getValue() || 0;
+  
+  if (!DEBUG) {
+    trackerCell.setValue(currentSignups + 1);
+  } else {
+    Logger.log(`DEBUG: Would update TRACKER sheet for ${name}: Signups incremented from ${currentSignups} to ${currentSignups + 1}`);
+  }
 }
 
-/*
- * Given a name as formatted by the formatter, get an array with 
- * the student's [year_sheet_index, name_row_index]
+/**
+ * Builds a list of student names from the tracker spreadsheet.
+ * 
+ * This function performs the following tasks:
+ * 1. Iterates through all sheets in the tracker spreadsheet.
+ * 2. Extracts last names and first names from each sheet.
+ * 3. Combines names with year tags (e.g., MS1, MS2) based on sheet index.
+ * 4. Sorts the final list of names alphabetically.
+ * 
+ * @returns {string[]} An array of formatted student names (e.g., "Last, First (MS1)").
+ */
+function buildNameList() {
+  const sheets = SpreadsheetApp.openById(SHEETS_ID.TRACKER).getSheets();
+  const studentNames = [];
+
+  sheets.forEach((sheet, index) => {
+    const yearTag = getYearTag(index);
+    if (!yearTag) return;
+
+    const lastNames = sheet.getRange(2, TRACK_INDEX.LASTNAME, sheet.getLastRow() - 1, 1).getValues();
+    const firstNames = sheet.getRange(2, TRACK_INDEX.FIRSTNAME, sheet.getLastRow() - 1, 1).getValues();
+
+    lastNames.forEach((lastName, rowIndex) => {
+      if (lastName[0] !== "") {
+        const newName = `${lastName[0]}, ${firstNames[rowIndex][0]} (${yearTag})`;
+        if (studentNames.includes(newName)) {
+          Logger.log(`Duplicate: ${newName}`);
+        } else {
+          studentNames.push(newName);
+        }
+      }
+    });
+  });
+
+  return studentNames.sort();
+}
+
+/**
+ * Finds the sheet index and row index for a given student name.
+ * 
+ * @param {string} name - The formatted name of the student (e.g., "Last, First (MS1)").
+ * @returns {number[]} An array containing [sheetIndex, rowIndex] of the student's entry.
  */
 function findCellByName(name) {
-  var sheets = SpreadsheetApp.openById(SHEET_TRACKER).getSheets();
-  var nameArr = name.slice(0, -6).split(", ");
-  var firstName = nameArr[1];
-  var lastName = nameArr[0];
+  const sheets = SpreadsheetApp.openById(SHEETS_ID.TRACKER).getSheets();
+  const [lastName, firstName] = name.slice(0, -6).split(", ");
 
-  var sheetNum = -1;
-  var nameNum = -1;
-  
-  for (var i = 0; i < sheets.length; i++) {
-    var sheet = sheets[i];
-    var lastNamesValues = sheet.getRange(1, TRACK_LASTNAME_NDX, sheet.getMaxRows() - 1).getValues();
-    var firstNamesValues = sheet.getRange(1, TRACK_FIRSTNAME_NDX, sheet.getMaxRows() - 1).getValues();
+  for (let sheetIndex = 0; sheetIndex < sheets.length; sheetIndex++) {
+    const sheet = sheets[sheetIndex];
+    const lastNames = sheet.getRange(2, TRACK_INDEX.LASTNAME, sheet.getLastRow() - 1, 1).getValues();
+    const firstNames = sheet.getRange(2, TRACK_INDEX.FIRSTNAME, sheet.getLastRow() - 1, 1).getValues();
 
-    // convert the array ignoring empty cells
-    for(var j = 0; j < lastNamesValues.length; j++) {
-      //if(firstNamesValues[j][0] == firstName) Logger.log(firstNamesValues[j][0]);
-      //if(lastNamesValues[j][0] == lastName) Logger.log(lastNamesValues[j][0]);
-      if(firstNamesValues[j][0] == firstName && lastNamesValues[j][0] == lastName) {
-        sheetNum = i;
-        nameNum = j;
-        break;
-      }
+    const rowIndex = lastNames.findIndex((row, index) => 
+      row[0] === lastName && firstNames[index][0] === firstName
+    );
+
+    if (rowIndex !== -1) {
+      return [sheetIndex, rowIndex + 2]; // +2 because we start from row 2 and array is 0-indexed
     }
-    if (sheetNum != -1) break;
   }
 
-  if (sheetNum == -1 && nameNum == -1) {
-    Logger.log("Did not find name")
-    Logger.log(name)
-  }
-
-  return([sheetNum, nameNum]);
+  Logger.log(`Did not find name: ${name}`);
+  return [-1, -1];
 }
 
-// Update the name list for the Google Form 
+/**
+ * Updates the list of student names in the Google Form.
+ * 
+ * This function retrieves the current list of student names and
+ * updates the corresponding form item with these names as choices.
+ */
 function updateStudents() {
-  var form = FormApp.getActiveForm();
-  var namesList = form.getItemById(NAMES_ID).asListItem();
-
-  // Generate name options from Match Tracker
-  var studentNames = buildNameList();
+  const form = FormApp.getActiveForm();
+  const namesList = form.getItemById(NAMES_ID).asListItem();
+  const studentNames = buildNameList();
   namesList.setChoiceValues(studentNames);
 }
 
+/**
+ * Returns the year tag based on the sheet index.
+ * 
+ * @param {number} sheetNum - The index of the sheet.
+ * @returns {string|number} The year tag (e.g., "MS1", "PA2") or 0 if invalid.
+ */
 function getYearTag(sheetNum) {
-  var tags = ["MS1", "MS2", "MS3", "MS4", "PA1", "PA2"]
-  if (sheetNum > tags.length) return 0;
-  return tags[sheetNum];
-} 
+  const tags = ["MS1", "MS2", "MS3", "MS4", "PA1", "PA2"];
+  return sheetNum < tags.length ? tags[sheetNum] : 0;
+}
 
+/**
+ * Retrieves information about a specific position from the People sheet.
+ * 
+ * @param {string} position - The position to look up (e.g., "CEO", "ROCManager", "ClassLists").
+ * @param {string} info - The type of information to retrieve ("name" or "email").
+ * @returns {string} The requested information (name or email) for the specified position.
+ * 
+ * This function:
+ * 1. Opens the People sheet using the SHEET_PEOPLE ID.
+ * 2. Uses a switch statement to find the correct row for the given position.
+ * 3. Retrieves the name and email from the appropriate cells.
+ * 4. Returns the requested information (name or email) based on the 'info' parameter.
+ * 
+ * If the position is not found or the info type is invalid, it returns an error message.
+ */
 function GET_INFO(position, info) {
-  var sheet = SpreadsheetApp.openById(SHEET_PEOPLE).getSheets()[0];
-  name = ""
-  email = ""
-  switch(position) {
-    case("CEO"):
-      name = sheet.getRange(PEOPLE_CEO, 2).getValue();
-      email = sheet.getRange(PEOPLE_CEO, 3).getValue();
-      break;
-    case("COO"):
-      name = sheet.getRange(PEOPLE_COO, 2).getValue();
-      email = sheet.getRange(PEOPLE_COO, 3).getValue();
-      break;
-    case("Webmaster"):
-      name = sheet.getRange(PEOPLE_WEBMASTER, 2).getValue();
-      email = sheet.getRange(PEOPLE_WEBMASTER, 3).getValue();
-      break;
-    case("GenPedManager"):
-      name = sheet.getRange(PEOPLE_GEN_PED, 2).getValue();
-      email = sheet.getRange(PEOPLE_GEN_PED, 3).getValue();
-      break;
-    case("WomenManager"):
-      name = sheet.getRange(PEOPLE_WOMEN, 2).getValue();
-      email = sheet.getRange(PEOPLE_WOMEN, 3).getValue();
-      break;
-    case("GeriDermManager"):
-      name = sheet.getRange(PEOPLE_GERI_DERM, 2).getValue();
-      email = sheet.getRange(PEOPLE_GERI_DERM, 3).getValue();
-      break;
-    case("DIMEManager"):
-      name = sheet.getRange(PEOPLE_DIME, 2).getValue();
-      email = sheet.getRange(PEOPLE_DIME, 3).getValue();
-      break;
-    case("ROCManager"):
-      name = sheet.getRange(PEOPLE_ROC, 2).getValue();
-      email = sheet.getRange(PEOPLE_ROC, 3).getValue();
-      break;
-    case("SMManager"):
-      name = sheet.getRange(PEOPLE_SM, 2).getValue();
-      email = sheet.getRange(PEOPLE_SM, 3).getValue();
-      break;
-    case("LayCouns"):
-      name = sheet.getRange(PEOPLE_LAY, 2).getValue();
-      email = sheet.getRange(PEOPLE_LAY, 3).getValue();
-      break;
-    case("ClassLists"):
-      name = sheet.getRange(PEOPLE_CLASS, 2).getValue();
-      email = sheet.getRange(PEOPLE_CLASS, 3).getValue();
-      break;
-    default:
-      name = "Name Not Found";
-      email = "Email Not Found";
-      break;
+  const sheet = SpreadsheetApp.openById(SHEETS_ID.PEOPLE).getSheets()[0];
+  const positions = {
+    CEO: PEOPLE_INDEX.CEO,
+    COO: PEOPLE_INDEX.COO,
+    Webmaster: PEOPLE_INDEX.WEBMASTER,
+    GenPedManager: PEOPLE_INDEX.GEN_PED,
+    WomenManager: PEOPLE_INDEX.WOMEN,
+    GeriDermManager: PEOPLE_INDEX.GERI_DERM,
+    DIMEManager: PEOPLE_INDEX.DIME,
+    ROCManager: PEOPLE_INDEX.ROC,
+    SMManager: PEOPLE_INDEX.SM,
+    LayCouns: PEOPLE_INDEX.LAY,
+    ClassLists: PEOPLE_INDEX.CLASS
+  };
+
+  const rowIndex = positions[position];
+  if (!rowIndex) {
+    return info === "email" ? "Email Not Found" : "Name Not Found";
   }
-  switch(info) {
-    case "Email": case "email":
-      return email;
-    case "Name": case "name":
-      return name;
-    default:
-      return "Bad Lookup"
-  }
+
+  const name = sheet.getRange(rowIndex, 2).getValue();
+  const email = sheet.getRange(rowIndex, 3).getValue();
+
+  return info.toLowerCase() === "email" ? email : name;
 }

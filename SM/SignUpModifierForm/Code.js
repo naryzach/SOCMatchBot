@@ -1,10 +1,10 @@
 // Sheet and Form IDs
-const SHEET_SIGN_ID = "1mKUVnFeCzI8x2w83rifGX9IA9VFliNTbiDLEMpynPoI";
-const FORM_MAIN_ID = "1xcgvZ9eJDsPT_uuekd4o5XT2LWYhCS7sDhmhDj9IM5I";
-const NAMES_ITEM_ID = "2069885822";
+const SHEET_SIGN_ID = "1mKUVnFeCzI8x2w83rifGX9IA9VFliNTbiDLEMpynPoI"; // Sheet associated with main form
+const FORM_MAIN_ID = "1xcgvZ9eJDsPT_uuekd4o5XT2LWYhCS7sDhmhDj9IM5I"; // ID of main form
+const NAMES_ITEM_ID = "2069885822"; // ID of the names list item in the form
 
 // Sign up sheet column indices
-const SIGN_INDICES = {
+const SIGN_INDEX = {
   NAME: 2,
   PTS_ALONE: 3,
   ELECTIVE: 4,
@@ -16,7 +16,7 @@ const SIGN_INDICES = {
 };
 
 // Match tracker sheet column indices
-const TRACK_INDICES = {
+const TRACK_INDEX = {
   LASTNAME: 1,
   FIRSTNAME: 2,
   SIGNUPS: 3,
@@ -26,6 +26,8 @@ const TRACK_INDICES = {
   CXLEARLY: 7,
   DATE: 8
 };
+
+// *** ---------------------------------- *** // 
 
 /**
  * Creates form submit and time-based triggers for the active form.
@@ -67,13 +69,13 @@ function onFormSubmit(e) {
   const date = form.getDescription().split(";")[0];
   const lastRow = sheet.getLastRow();
   
-  const usedNames = sheet.getRange(2, SIGN_INDICES.NAME, lastRow - 1, 1).getValues().flat();
-  const usedDates = sheet.getRange(2, SIGN_INDICES.DATE, lastRow - 1, 1).getValues().flat();
+  const usedNames = sheet.getRange(2, SIGN_INDEX.NAME, lastRow - 1, 1).getValues().flat();
+  const usedDates = sheet.getRange(2, SIGN_INDEX.DATE, lastRow - 1, 1).getValues().flat();
 
   for (let i = 0; i < lastRow - 1; i++) {
     if (name === usedNames[i] && new Date(date).valueOf() === usedDates[i].valueOf()) {
       Logger.log("Found sign up");
-      const cell = sheet.getRange(i + 2, SIGN_INDICES.NAME);
+      const cell = sheet.getRange(i + 2, SIGN_INDEX.NAME);
       cell.setValue(cell.getValue().endsWith("CXL") ? name.slice(0, -3) : name + "CXL");
       break;
     }
@@ -95,8 +97,8 @@ function updateNames() {
   form.setDescription(formMain.getDescription());
 
   const lastRow = sheetSign.getLastRow();
-  const signDates = sheetSign.getRange(2, SIGN_INDICES.DATE, lastRow - 1, 1).getValues().flat();
-  const signNames = sheetSign.getRange(2, SIGN_INDICES.NAME, lastRow - 1, 1).getValues().flat();
+  const signDates = sheetSign.getRange(2, SIGN_INDEX.DATE, lastRow - 1, 1).getValues().flat();
+  const signNames = sheetSign.getRange(2, SIGN_INDEX.NAME, lastRow - 1, 1).getValues().flat();
 
   const currentDateValue = new Date(date).valueOf();
   const largeNameList = signDates.reduce((acc, dateValue, index) => {
