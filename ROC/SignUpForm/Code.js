@@ -396,6 +396,8 @@ function updateMatchList(date, type, num_rooms, address) {
       let matches = trackSheet.getRange(row, TRACK_INDEX.MATCHES).getValue() || 0;
       trackSheet.getRange(row, TRACK_INDEX.MATCHES).setValue(matches + 1);
       trackSheet.getRange(row, TRACK_INDEX.DATE).setValue(date);
+      const allDates = trackSheet.getRange(row, TRACK_INDEX.DATE_ALL).getValue();
+      trackSheet.getRange(row, TRACK_INDEX.DATE_ALL).setValue(allDates ? allDates + "," + date : date);
     } else {
       Logger.log(`DEBUG: Would update TRACKER sheet for ${name}: Matches incremented, Date set to ${date}`);
     }
