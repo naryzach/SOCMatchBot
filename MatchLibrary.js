@@ -90,7 +90,7 @@ function buildNameList() {
     const sheets = SpreadsheetApp.openById(SHEETS_ID.TRACKER).getSheets();
     const [lastName, firstName] = name.slice(0, -6).split(", ");
   
-    for (let sheetIndex = 0; sheetIndex < sheets.length; sheetIndex++) {
+    for (let sheetIndex = 0; sheetIndex < 6; sheetIndex++) { // 6 classes (4 MS, 2 PA)
       const sheet = sheets[sheetIndex];
       const lastNames = sheet.getRange(2, TRACK_INDEX.LASTNAME, sheet.getLastRow() - 1, 1).getValues();
       const firstNames = sheet.getRange(2, TRACK_INDEX.FIRSTNAME, sheet.getLastRow() - 1, 1).getValues();

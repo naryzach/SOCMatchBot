@@ -41,7 +41,7 @@ const NAMES_ID = "2021179574";  // data-item-id for names list
 const SIGNUP_DAYS = {
   LEAD: 5,    // Open signup
   MANAGE: 3,  // Send preliminary match to manager
-  CLOSE: 2    // Close signup
+  CLOSE: 4    // Close signup
 };
 
 // Column indices
@@ -96,8 +96,16 @@ function createTriggers() {
   }
 
   // Create triggers
-  ScriptApp.newTrigger("onFormSubmit").forForm(form).onFormSubmit().create();
-  ScriptApp.newTrigger("updateForm").timeBased().atHour(8).everyDays(1).create();
+  ScriptApp.newTrigger("onFormSubmit")
+    .forForm(form)
+    .onFormSubmit()
+    .create();
+  
+  ScriptApp.newTrigger("updateForm")
+    .timeBased()
+    .atHour(8)
+    .everyDays(1)
+    .create();
 
   // Update name list
   updateStudents();
@@ -192,134 +200,7 @@ function updateForm() {
  * 5. Sends an email to managers with sign-up notes and dietary restrictions
  */
 function updateMatchList(date, type, num_rooms) {
-  const sheetMatch = SpreadsheetApp.openById(SHEETS_ID.MATCH).getSheets()[0];
-  const sheetsTrack = SpreadsheetApp.openById(SHEETS_ID.TRACKER).getSheets();
-  const sheetSign = SpreadsheetApp.openById(SHEETS_ID.SIGN).getSheets()[0];
-
-  const largeNameList = [];
-
-  // Gather names of signups for current dated clinic
-  let lastRow = sheetSign
-      .getRange(1, 1)
-      .getNextDataCell(SpreadsheetApp.Direction.DOWN)
-      .getRow();
-  const signDates = sheetSign.getRange(2, SIGN_INDEX.DATE, lastRow).getValues();
-  const signNames = sheetSign.getRange(2, SIGN_INDEX.NAME, lastRow).getValues();
-  for(let i = 0; i < lastRow-1; i++) {
-    if (date.valueOf() == signDates[i][0].valueOf()) {
-      largeNameList.push(signNames[i][0]);
-    }
-  }
-
-  let nameArr = [];
-  let matchScore = 0;
-  let matches = 0;
-  let signUps = 0;
-  let noShow = 0;
-  let cxlEarly = 0;
-  let cxlLate = 0;
-  let lastDate = "";
-  let ptsAlone = "No";
-  let fourthYrElect = "No";
-  let socPos = "No";
-  const namesWithScores = {};
-
-  // Generate match list
-  for (const name of largeNameList) {
-    matchScore = 0;
-
-    // Find which row the name is found on the sign up sheet
-    const nameRowNdx = signNames.findIndex(row => row[0] === name && signDates[signNames.indexOf(row)][0].valueOf() === date.valueOf()) + 2;
-
-    // Grab data on all sign ups
-    nameArr = findCellByName(name)
-    
-    // Check for errors reading names
-    if (nameArr[0] == -1) {
-      Logger.log("Name error");
-      Logger.log(name);
-      if (name.slice(-3) == "CXL") {
-        // Grab new name w/o "CXL"
-        nameArr = findCellByName(name.slice(0,-3))
-        if (nameArr[0] == -1) continue;
-
-        // Update the sign up counter if cancellation
-        let tmp = sheetsTrack[nameArr[0]].getRange(nameArr[1] + 1, TRACK_INDEX.CXLEARLY).getValue();
-        if (tmp == "") { 
-          tmp = 0;
-        }
-        if (!DEBUG) {
-          sheetsTrack[nameArr[0]].getRange(nameArr[1] + 1, TRACK_INDEX.CXLEARLY).setValue(parseInt(tmp) + 1);
-        } else {
-          Logger.log(`DEBUG: Would update TRACKER sheet for ${name.slice(0,-3)}: CXLEARLY = ${parseInt(tmp) + 1}`);
-        }
-      }
-
-      // Do not try to match that name
-      continue;
-    }
-    signUps = parseInt(sheetsTrack[nameArr[0]].getRange(nameArr[1] + 1, TRACK_INDEX.SIGNUPS).getValue());
-    matches = parseInt(sheetsTrack[nameArr[0]].getRange(nameArr[1] + 1, TRACK_INDEX.MATCHES).getValue());
-    noShow = parseInt(sheetsTrack[nameArr[0]].getRange(nameArr[1] + 1, TRACK_INDEX.NOSHOW).getValue());
-    cxlLate = parseInt(sheetsTrack[nameArr[0]].getRange(nameArr[1] + 1, TRACK_INDEX.CXLLATE).getValue());
-    cxlEarly = parseInt(sheetsTrack[nameArr[0]].getRange(nameArr[1] + 1, TRACK_INDEX.CXLEARLY).getValue());
-    lastDate = sheetsTrack[nameArr[0]].getRange(nameArr[1] + 1, TRACK_INDEX.DATE).getValue();
-
-    // Grab form submission data
-    fourthYrElect = sheetSign.getRange(nameRowNdx, SIGN_INDEX.ELECTIVE).getValue();
-    socPos = sheetSign.getRange(nameRowNdx, SIGN_INDEX.SOC_POS).getValue();
-
-    // Calculate base match score
-    matchScore = signUps - matches;
-
-    // Adjust score based on student status and position
-    if (socPos == "Yes" && nameArr[0] <= 1) { // SOC members (MS1/2s)
-      matchScore *= 2;
-    }
-    if (fourthYrElect == "Yes" && nameArr[0] == 3) { // MS4s on elective
-      matchScore += 500;
-    }
-
-    // Add points based on seniority
-    const seniorityPoints = [0, 50, 500, 1000, 0, 0];
-    matchScore += seniorityPoints[nameArr[0]] || 0;
-
-    // Adjust for last match date
-    if (lastDate == "") {
-      matchScore += 25; // Never been matched
-    } else {
-      const daysSince = (new Date() - new Date(lastDate)) / (1000 * 60 * 60 * 24);
-      matchScore += daysSince / 365;
-    }
-
-    // Apply cancellation penalties
-    matchScore -= (noShow * 3 + cxlLate * 2 + cxlEarly) || 0;
-
-    // Create dictionary of name (key) and score (value)
-    namesWithScores[name] = matchScore;
-  }
-
-  Logger.log("Match scores:", namesWithScores);
-
-  // Generate match list based on points
-  const sortedNames = Object.entries(namesWithScores)
-    .sort((a, b) => b[1] - a[1])
-    .map(entry => entry[0]);
-
-  const matchList = sortedNames.slice(0, Math.min(sortedNames.length, num_rooms * 2));
-
-  Logger.log("Prelim match list:", matchList);
-
-  // Clear Match List Sheet file names
-  // Clear match list and remove borders
-  sheetMatch.getRange(MATCH_INDEX.NAMES, 1, 25, 3).clearContent().setBorder(false, false, false, false, false, false);
-  
-  // Clear physicians and chalk talk
-  sheetMatch.getRange(MATCH_INDEX.PHYS1).clearContent();
-  sheetMatch.getRange(MATCH_INDEX.PHYS2).clearContent();
-  sheetMatch.getRange(MATCH_INDEX.CHALK_TALK).clearContent();
-
-  // Update Match List Sheet header
+  // Clinic time and type
   const clinicTimes = {
     2: "6PM - 10PM",
     6: "8AM - 12PM"
@@ -330,6 +211,7 @@ function updateMatchList(date, type, num_rooms) {
     Logger.log("Issue with time extraction");
   }
 
+  // Clinic type and manager
   const clinicTypes = {
     "W": {
       title: "Women's Clinic",
@@ -354,144 +236,14 @@ function updateMatchList(date, type, num_rooms) {
     Logger.log("Problem with clinic type");
   }
 
-  const clinicTitle = clinicInfo.title;
-  const managerNames = GET_INFO(clinicInfo.managerType, "name");
-  const managerEmails = GET_INFO(clinicInfo.managerType, "email");
+  // Generate match list
+  const matchList = generateMatchList(date, num_rooms);
 
-  sheetMatch.getRange(MATCH_INDEX.TITLE).setValue(clinicTitle);
-  sheetMatch.getRange(MATCH_INDEX.DATE).setValue(date);
-  sheetMatch.getRange(MATCH_INDEX.TIME).setValue(clinicTime);
-  sheetMatch.getRange(MATCH_INDEX.MANAGERS).setValue(managerNames);
-
-  // Update Match List Sheet file
-  // Initialize variables
-  let firstName, lastName;
-  const actuallyMatched = [];
-  const rollOverProviders = [];
-
-  Logger.log(`Number of rooms: ${num_rooms}`);
-  Logger.log(`Number of providers: ${matchList.length}`);
-
-  const numSlots = Math.min(matchList.length, num_rooms);
-  Logger.log(`Number of slots: ${numSlots}`);
-
-  // Fill rooms with people who can see patients alone
-  for (let i = 0; i < numSlots; i++) {
-    const nameRowIndex = signNames.findIndex(n => n[0] === matchList[i] && signDates[n[0]].valueOf() === date.valueOf()) + 2;
-    const ptsAlone = sheetSign.getRange(nameRowIndex, SIGN_INDEX.PTS_ALONE).getValue();
-
-    if (ptsAlone === "Yes") {
-      actuallyMatched.push(matchList[i]);
-      const nameArr = findCellByName(matchList[i]);
-      firstName = sheetsTrack[nameArr[0]].getRange(nameArr[1] + 1, TRACK_INDEX.FIRSTNAME).getValue();
-      lastName = sheetsTrack[nameArr[0]].getRange(nameArr[1] + 1, TRACK_INDEX.LASTNAME).getValue();
-      
-      sheetMatch.getRange(i + MATCH_INDEX.NAMES, 1).setValue(`Room ${i + 1}`);
-      sheetMatch.getRange(i + MATCH_INDEX.NAMES, 2).setValue(`${firstName} ${lastName}, ${getYearTag(nameArr[0])}`);
-      sheetMatch.getRange(i + MATCH_INDEX.NAMES, 3).setValue("_____________________________________________\n_____________________________________________\n_____________________________________________");
-      sheetMatch.getRange(i + MATCH_INDEX.NAMES, 1, 1, 3).setBorder(true, true, true, true, true, true);
-    } else {
-      rollOverProviders.push(matchList.splice(i, 1)[0]);
-      i--;
-    }
-    if (matchList.length <= (i+1)) {numSlots = matchList.length; break;}
-  }
-
-  Logger.log(`Roll over providers: ${rollOverProviders}`);
-
-  // Fill the second room spot
-  const matchListP2 = rollOverProviders.concat(matchList.slice(numSlots));
-  const numSlots2 = Math.min(matchListP2.length, numSlots);
-
-  Logger.log(`Number of slots (for 2nd pass): ${numSlots2}`);
-
-  for (let i = 0; i < numSlots2; i++) {
-    actuallyMatched.push(matchListP2[i]);
-    const nameArr = findCellByName(matchListP2[i]);
-    firstName = sheetsTrack[nameArr[0]].getRange(nameArr[1] + 1, TRACK_INDEX.FIRSTNAME).getValue();
-    lastName = sheetsTrack[nameArr[0]].getRange(nameArr[1] + 1, TRACK_INDEX.LASTNAME).getValue();
-
-    const prevName = sheetMatch.getRange(i + MATCH_INDEX.NAMES, 2).getValue();
-    sheetMatch.getRange(i + MATCH_INDEX.NAMES, 2).setValue(`${prevName}\n${firstName} ${lastName}, ${getYearTag(nameArr[0])}`);
-  }
-
-  Logger.log(`Match list part 2: ${matchListP2}`);
-
-  // Add volunteer spaces
-  for (let i = 0; i < numSlots; i++) {
-    const prevName = sheetMatch.getRange(i + MATCH_INDEX.NAMES, 2).getValue();
-    sheetMatch.getRange(i + MATCH_INDEX.NAMES, 2).setValue(`${prevName}\nVolunteer: `);
-  }
-
-  // Add DIME Manager slot
-  sheetMatch.getRange(numSlots + MATCH_INDEX.NAMES, 1).setValue("DIME Managers");
-  sheetMatch.getRange(numSlots + MATCH_INDEX.NAMES, 3).setValue("_____________________________________________\n_____________________________________________\n_____________________________________________");
-  sheetMatch.getRange(numSlots + MATCH_INDEX.NAMES, 1, 1, 3).setBorder(true, true, true, true, true, true);
-
-  // Add DIME Provider slot
-  sheetMatch.getRange(numSlots + 1 + MATCH_INDEX.NAMES, 1).setValue("DIME Providers");
-  sheetMatch.getRange(numSlots + 1 + MATCH_INDEX.NAMES, 3).setValue("_____________________________________________\n_____________________________________________\n_____________________________________________");
-  sheetMatch.getRange(numSlots + 1 + MATCH_INDEX.NAMES, 1, 1, 3).setBorder(true, true, true, true, true, true);
-
-  // Add lay counselor slot
-  sheetMatch.getRange(numSlots + 2 + MATCH_INDEX.NAMES, 1).setValue("Lay Counselors");
-  sheetMatch.getRange(numSlots + 2 + MATCH_INDEX.NAMES, 2).setValue(GET_INFO("LayCouns", "name"));
-  sheetMatch.getRange(numSlots + 2 + MATCH_INDEX.NAMES, 3).setValue("_____________________________________________\n_____________________________________________\n_____________________________________________");
-  sheetMatch.getRange(numSlots + 2 + MATCH_INDEX.NAMES, 1, 1, 3).setBorder(true, true, true, true, true, true);
-
-  // ** Mutable changes after here ** // 
-
+  // Setup match list
+  const actuallyMatched = setupMatchList(matchList, clinicTime, clinicInfo, date, num_rooms);
+  
   // Update match stats
-  let managerEmailBody = "";
-  for (const name of actuallyMatched) {
-    const nameArr = findCellByName(name);
-    const trackSheet = sheetsTrack[nameArr[0]];
-    const row = nameArr[1] + 1;
-
-    // Update match count and date
-    if (!DEBUG) {
-      let matches = trackSheet.getRange(row, TRACK_INDEX.MATCHES).getValue() || 0;
-      trackSheet.getRange(row, TRACK_INDEX.MATCHES).setValue(matches + 1);
-      trackSheet.getRange(row, TRACK_INDEX.DATE).setValue(date);
-      const allDates = trackSheet.getRange(row, TRACK_INDEX.DATE_ALL).getValue();
-      trackSheet.getRange(row, TRACK_INDEX.DATE_ALL).setValue(allDates ? allDates + "," + date : date);
-    } else {
-      Logger.log(`DEBUG: Would update TRACKER sheet for ${name}: Matches = ${parseInt(matches) + 1}, Date = ${date}`);
-    }
-
-    // Gather sign-up information
-    const nameRowIndex = signNames.findIndex(n => n[0] === name && signDates[n[0]].valueOf() === date.valueOf()) + 2;
-    const dietRestrict = sheetSign.getRange(nameRowIndex, SIGN_INDEX.DIET).getValue();
-    const comments = sheetSign.getRange(nameRowIndex, SIGN_INDEX.COMMENTS).getValue();
-
-    if (dietRestrict !== "None" && dietRestrict !== "" || comments !== "") {
-      managerEmailBody += `${name} -- Dietary restrictions: ${dietRestrict}; Comments: ${comments}\n`;
-    }
-  }
-
-  if (managerEmailBody === "") {
-    managerEmailBody = "No comments or dietary restrictions noted by matched students.";
-  }
-
-  // Send email prompting managers to fill in the number of rooms needed
-  const htmlBody = HtmlService.createTemplateFromFile('PrelimMatchEmail');
-  const linkMatch = `https://docs.google.com/spreadsheets/d/${SHEETS_ID.MATCH}/edit?usp=sharing`;
-  htmlBody.link_match = linkMatch;
-  htmlBody.sign_up_notes = managerEmailBody;
-  const emailHtml = htmlBody.evaluate().getContent();
-  MailApp.sendEmail({
-    to: DEBUG ? GET_INFO("Webmaster", "email") : `${managerEmails},${GET_INFO("DIMEManager", "email")},${GET_INFO("LayCouns", "email")}`,
-    subject: "Notes from SOC sign up",
-    replyTo: GET_INFO("Webmaster", "email"),
-    htmlBody: emailHtml,
-    name: "SOC Scheduling Assistant"
-  });
-
-  if (DEBUG) {
-    Logger.log(`DEBUG: Preliminary match list email sent to Webmaster instead of managers for SOC on ${date}`);
-  }
-
-  FormApp.getActiveForm().deleteAllResponses();
+  updateMatchStats(actuallyMatched, clinicInfo, date);
 }
 
 /**
