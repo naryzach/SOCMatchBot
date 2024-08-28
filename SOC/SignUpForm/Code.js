@@ -136,14 +136,14 @@ function updateForm() {
   const dateSheet = spreadsheet.getSheets()[0];
 
   // Format date column
-  dateSheet.getRange('A:A').setNumberFormat('dd-MM-yyyy');
+  const dateColumn = dateSheet.getRange('A:A');
+  dateColumn.setNumberFormat('dd-MM-yyyy');
 
   const today = new Date();
   const checkDates = {
     lead: new Date(today.getFullYear(), today.getMonth(), today.getDate() + SIGNUP_DAYS.LEAD),
     close: new Date(today.getFullYear(), today.getMonth(), today.getDate() + SIGNUP_DAYS.CLOSE),
     manage: new Date(today.getFullYear(), today.getMonth(), today.getDate() + SIGNUP_DAYS.MANAGE),
-    ceo: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1)
   };
 
   const lastRow = dateSheet.getLastRow();
@@ -199,7 +199,7 @@ function updateForm() {
  * 4. Updates the match list sheet with the generated matches
  * 5. Sends an email to managers with sign-up notes and dietary restrictions
  */
-function updateMatchList(date, type, num_rooms) {
+function updateMatchList(date, type, numRooms) {
   // Clinic time and type
   const clinicTimes = {
     2: "6PM - 10PM",
@@ -237,10 +237,10 @@ function updateMatchList(date, type, num_rooms) {
   }
 
   // Generate match list
-  const matchList = generateMatchList(date, num_rooms);
+  const matchList = generateMatchList(date, numRooms);
 
   // Setup match list
-  const actuallyMatched = setupMatchList(matchList, clinicTime, clinicInfo, date, num_rooms);
+  const actuallyMatched = setupMatchList(matchList, clinicTime, clinicInfo, date, numRooms);
   
   // Update match stats
   updateMatchStats(actuallyMatched, clinicInfo, date);

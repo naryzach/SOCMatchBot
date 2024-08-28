@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style> 
+      p {
+        color: blue; 
+      }
+    </style> 
+  </head>
+  <body>
+    Hello <?= name ?>,<br><br>
+    
+    We hope this email finds you well. We wanted to bring to your attention that our records show you did not attend a clinic last month (<?= month ?>).<br><br>
+    
+    As a reminder, regular clinic attendance is an important part of your board member responsibilities. If there were any extenuating circumstances or if our records are incorrect, please let us know. Otherwise, please plan to attend two clinics this month to make up for your absence.<br><br>
+
+    Sincerely,<br>
+    The <abbr title="Contact the Webmaster for more information">SOC scheduling assistant</abbr> on behalf of the board<br>
+    
+    <br> <small>This is an automatic email from the SOC scheduling assistant. If you have any comments or concerns about it, click <a href="mailto:<?= feedback_email ?>?subject=SOC Scheduler Feedback">this link</a> to send feedback.</small><br>
+  </body>
+</html>
+
