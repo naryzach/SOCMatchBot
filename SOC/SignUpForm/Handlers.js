@@ -361,7 +361,8 @@ function setupMatchList(matchList, clinicTime, clinicInfo, date, num_rooms) {
   sheetMatch.getRange(MATCH_INDEX.DATE).setValue(date);
   sheetMatch.getRange(MATCH_INDEX.TIME).setValue(clinicTime);
   sheetMatch.getRange(MATCH_INDEX.MANAGERS).setValue(managerNames);
-
+  sheetMatch.getRange(MATCH_INDEX.LIAISON).setValue(GET_INFO("Liaison", "name"));
+  
   // Update Match List Sheet file
   // Initialize variables
   let firstName, lastName;
@@ -517,7 +518,7 @@ function updateMatchStats(actuallyMatched, clinicInfo, date) {
   htmlBody.sign_up_notes = managerEmailBody;
   const emailHtml = htmlBody.evaluate().getContent();
   MailApp.sendEmail({
-    to: DEBUG ? GET_INFO("Webmaster", "email") : `${managerEmails},${GET_INFO("DIMEManager", "email")},${GET_INFO("LayCouns", "email")}`,
+    to: DEBUG ? GET_INFO("Webmaster", "email") : `${managerEmails},${GET_INFO("DIMEManager", "email")},${GET_INFO("LayCouns", "email")},${GET_INFO("Liaison", "email")}`,
     subject: "Notes from SOC sign up",
     replyTo: GET_INFO("Webmaster", "email"),
     htmlBody: emailHtml,

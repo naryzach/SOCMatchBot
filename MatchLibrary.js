@@ -41,7 +41,8 @@ const TRACK_INDEX = {
     ROC: 10,
     SM: 11,
     CLASS: 12,
-    SECRETARY: 13
+    SECRETARY: 13,
+    LIAISON: 14
   };
 
 /**
@@ -163,7 +164,8 @@ function buildNameList() {
       SMManager: PEOPLE_INDEX.SM,
       LayCouns: PEOPLE_INDEX.LAY,
       ClassLists: PEOPLE_INDEX.CLASS,
-      Secretary: PEOPLE_INDEX.SECRETARY
+      Secretary: PEOPLE_INDEX.SECRETARY,
+      Liaison: PEOPLE_INDEX.LIAISON
     };
   
     const rowIndex = positions[position];

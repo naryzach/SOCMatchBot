@@ -66,7 +66,8 @@ const MATCH_INDEX = {
   TIME: "C3",
   PHYS1: "A10",
   PHYS2: "B10",
-  CHALK_TALK: "C10"
+  CHALK_TALK: "C10",
+  LIAISON: "B8"
 };
 
 // Date sheet
