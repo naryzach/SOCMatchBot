@@ -154,10 +154,10 @@ function generateMatchList(date, num_rooms) {
         const originalName = name.slice(0, -3);
         const cancelledNameArr = findCellByName(originalName);
         if (cancelledNameArr[0] !== -1) {
-          let tmp = sheetsTrack[cancelledNameArr[0]].getRange(cancelledNameArr[1] + 1, TRACK_INDEX.CXLEARLY).getValue();
+          let tmp = sheetsTrack[cancelledNameArr[0]].getRange(cancelledNameArr[1], TRACK_INDEX.CXLEARLY).getValue();
           tmp = tmp === "" ? 0 : parseInt(tmp);
           if (!DEBUG) {
-            sheetsTrack[cancelledNameArr[0]].getRange(cancelledNameArr[1] + 1, TRACK_INDEX.CXLEARLY).setValue(tmp + 1);
+            sheetsTrack[cancelledNameArr[0]].getRange(cancelledNameArr[1], TRACK_INDEX.CXLEARLY).setValue(tmp + 1);
           } else {
             Logger.log(`DEBUG: Would update TRACKER sheet for ${originalName}: CXLEARLY = ${tmp + 1}`);
           }

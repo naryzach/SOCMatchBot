@@ -247,12 +247,12 @@ function onFormSubmit(e) {
   // Update the sign-up counter in the tracker
   const nameArr = findCellByName(name);
   if (!nameArr) {
-    Logger.log(`Could not find ${name} in tracker sheets`);
+    Logger.log(`Could not find ${name} in tracker sheets`); 
     return;
   }
 
   const [sheetIndex, rowIndex] = nameArr;
-  const cell = trackerSheets[sheetIndex].getRange(rowIndex + 1, TRACK_INDEX.SIGNUPS);
+  const cell = trackerSheets[sheetIndex].getRange(rowIndex, TRACK_INDEX.SIGNUPS);
   const currentValue = cell.getValue() || 0;
   
   if (!DEBUG) {

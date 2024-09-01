@@ -255,7 +255,7 @@ function onFormSubmit(e) {
 
   // Update tracker sheet
   const nameArr = findCellByName(name);
-  const trackerCell = sheetsTracker[nameArr[0]].getRange(nameArr[1] + 1, TRACK_INDEX.SIGNUPS);
+  const trackerCell = sheetsTracker[nameArr[0]].getRange(nameArr[1], TRACK_INDEX.SIGNUPS);
   const currentSignups = trackerCell.getValue() || 0;
   
   if (!DEBUG) {

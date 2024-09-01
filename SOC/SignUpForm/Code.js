@@ -41,7 +41,7 @@ const NAMES_ID = "2021179574";  // data-item-id for names list
 const SIGNUP_DAYS = {
   LEAD: 5,    // Open signup
   MANAGE: 3,  // Send preliminary match to manager
-  CLOSE: 4    // Close signup
+  CLOSE: 2    // Close signup
 };
 
 // Column indices
@@ -297,7 +297,7 @@ function onFormSubmit(e) {
 
   // Update sign-up counter in tracker
   const trackerSheet = trackerSheets[nameArr[0]];
-  const signupsCell = trackerSheet.getRange(nameArr[1] + 1, TRACK_INDEX.SIGNUPS);
+  const signupsCell = trackerSheet.getRange(nameArr[1], TRACK_INDEX.SIGNUPS);
   const currentSignups = signupsCell.getValue() || 0;
 
   if (!DEBUG) {
