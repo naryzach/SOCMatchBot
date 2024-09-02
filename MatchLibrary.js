@@ -24,7 +24,8 @@ const TRACK_INDEX = {
     NOSHOW: 5,
     CXLLATE: 6,
     CXLEARLY: 7,
-    DATE: 8
+    DATE: 8,
+    DATE_ALL: 9
   };
   
   // People sheet
@@ -39,7 +40,9 @@ const TRACK_INDEX = {
     LAY: 9,
     ROC: 10,
     SM: 11,
-    CLASS: 12
+    CLASS: 12,
+    SECRETARY: 13,
+    LIAISON: 14
   };
 
 /**
@@ -89,7 +92,7 @@ function buildNameList() {
     const sheets = SpreadsheetApp.openById(SHEETS_ID.TRACKER).getSheets();
     const [lastName, firstName] = name.slice(0, -6).split(", ");
   
-    for (let sheetIndex = 0; sheetIndex < sheets.length; sheetIndex++) {
+    for (let sheetIndex = 0; sheetIndex < 6; sheetIndex++) { // 6 classes (4 MS, 2 PA)
       const sheet = sheets[sheetIndex];
       const lastNames = sheet.getRange(2, TRACK_INDEX.LASTNAME, sheet.getLastRow() - 1, 1).getValues();
       const firstNames = sheet.getRange(2, TRACK_INDEX.FIRSTNAME, sheet.getLastRow() - 1, 1).getValues();
@@ -160,7 +163,9 @@ function buildNameList() {
       ROCManager: PEOPLE_INDEX.ROC,
       SMManager: PEOPLE_INDEX.SM,
       LayCouns: PEOPLE_INDEX.LAY,
-      ClassLists: PEOPLE_INDEX.CLASS
+      ClassLists: PEOPLE_INDEX.CLASS,
+      Secretary: PEOPLE_INDEX.SECRETARY,
+      Liaison: PEOPLE_INDEX.LIAISON
     };
   
     const rowIndex = positions[position];

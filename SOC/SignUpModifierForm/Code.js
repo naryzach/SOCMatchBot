@@ -24,7 +24,8 @@ const TRACK_INDEX = {
   NOSHOW: 5,
   CXLLATE: 6,
   CXLEARLY: 7,
-  DATE: 8
+  DATE: 8,
+  DATE_ALL: 9
 };
 
 // *** ---------------------------------- *** // 
@@ -71,11 +72,11 @@ function onFormSubmit(e) {
   const name = formResponse.getItemResponses()[0].getResponse();
 
   // Check for existing entries and toggle cancellation status
-  const range = sheet.getRange(2, SIGN_INDEX.NAME, lastRow - 1, 2);
+  const range = sheet.getRange(2, SIGN_INDEX.NAME, lastRow - 1, SIGN_INDEX.DATE + 1);
   const values = range.getValues();
   
   for (let i = 0; i < values.length; i++) {
-    if (name === values[i][0] && new Date(date).valueOf() === values[i][1].valueOf()) {
+    if (name === values[i][0] && new Date(date).valueOf() === values[i][SIGN_INDEX.DATE-2].valueOf()) {
       Logger.log(`Found sign up for ${name}`);
       const newName = name.slice(-3) !== "CXL" ? name + "CXL" : name.slice(0, -3);
       sheet.getRange(i + 2, SIGN_INDEX.NAME).setValue(newName);
@@ -101,12 +102,12 @@ function updateNames() {
 
   // Gather names of signups for current dated clinic
   const lastRow = sheet_sign.getLastRow();
-  const range = sheet_sign.getRange(2, SIGN_INDEX.DATE, lastRow - 1, 2);
+  const range = sheet_sign.getRange(2, SIGN_INDEX.NAME, lastRow - 1, SIGN_INDEX.DATE + 1);
   const values = range.getValues();
 
   const largeNameList = values
-    .filter(row => new Date(date).valueOf() === row[0].valueOf())
-    .map(row => row[1]);
+    .filter(row => new Date(date).valueOf() === row[SIGN_INDEX.DATE-2].valueOf())
+    .map(row => row[0]);
 
   const namesList = form.getItemById(NAMES_ITEM_ID).asListItem();
 
