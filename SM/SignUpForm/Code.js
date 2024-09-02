@@ -357,7 +357,7 @@ function updateMatchList(date, numRooms) {
  */
 function onFormSubmit(e) {
   const form = FormApp.getActiveForm();
-  const signUpSheet = SpreadsheetApp.openById(SHEETS_ID.SIGN).getSheets()[0];
+  const signUpSheet = SpreadsheetApp.openById(form.getDestinationId()).getSheets()[0];
   const trackerSheets = SpreadsheetApp.openById(SHEETS_ID.TRACKER).getSheets();
   
   const formResponse = e.response;
