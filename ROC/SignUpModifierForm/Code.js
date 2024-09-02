@@ -1,5 +1,5 @@
 // Sheet URLs
-const SHEET_SIGN_ID = "1FNhu-fzahjrlL0K--Mh-gSxBmDqqYWrBPG1VBOjbttQ"; // sheet associated with main form
+const SHEET_SIGN_ID = "1V4xGSO3RbAJIdsAvPdTU2raJ8xYyWBKuPHj9rql52S4"; // sheet associated with main form
 const FORM_MAIN_ID = "1Xpw6O7zK0_9z_yDCzqIz9U_T-Zcv11psDuI20S0Gc0c" // ID of main form
 const NAMES_ITEM_ID = "2069885822";
 
@@ -9,10 +9,10 @@ const SIGN_INDEX = {
   PTS_ALONE: 3,
   SPANISH: 4,
   SOC_POS: 5,
-  WATCHER: 6,
-  TRANSPORT: 7,
-  COMMENTS: 8,
-  ELECTIVE: 9,
+  ELECTIVE:6,
+  FOLLOW: 7,
+  CARPOOL: 8,
+  COMMENTS: 9,
   DATE: 10,
   CLINIC_TYPE: 11
 };

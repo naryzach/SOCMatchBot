@@ -26,7 +26,7 @@ const SHEETS_ID = {
   TRACKER: "10e68w1DkTm4kdXJIcMUeIUH5_KFP1uUgKv5SB5RHXDU",  // Match tracker
   DATES: "1eztpAJ1JSWps9SiHl6pHV_6y6pWZPZ_i9tP029nw7JQ",    // Clinic dates
   MATCH: "1FW1wiYIG9LvCEgFfpgf6c9GyKljNQbwEZkoRUE3lYWg",    // Match list
-  SIGN: "1FNhu-fzahjrlL0K--Mh-gSxBmDqqYWrBPG1VBOjbttQ",     // Form responses
+  SIGN: "1V4xGSO3RbAJIdsAvPdTU2raJ8xYyWBKuPHj9rql52S4",     // Form responses
   PEOPLE: "1R7sskPPhNi6Mhitz1-FHESdJhaJuKHM_o8oUJHSp9EQ"    // Contact info
 };
 
@@ -51,10 +51,10 @@ const SIGN_INDEX = {
   PTS_ALONE: 3,
   SPANISH: 4,
   SOC_POS: 5,
-  FOLLOW: 6,
-  CARPOOL: 7,
-  COMMENTS: 8,
-  ELECTIVE: 9,
+  ELECTIVE:6,
+  FOLLOW: 7,
+  CARPOOL: 8,
+  COMMENTS: 9,
   DATE: 10,
   CLINIC_TYPE: 11
 };
