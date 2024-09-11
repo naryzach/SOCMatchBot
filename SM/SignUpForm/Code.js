@@ -210,54 +210,49 @@ function updateMatchList(date, numRooms) {
  * @param {GoogleAppsScript.Events.FormsOnFormSubmit} e - The form submit event object.
  */
 function onFormSubmit(e) {
+  // Get form, sheets, and response data
   const form = FormApp.getActiveForm();
-  const signUpSheet = SpreadsheetApp.openById(form.getDestinationId()).getSheets()[0];
+  const signSheet = SpreadsheetApp.openById(SHEETS_ID.SIGN).getSheets()[0];
   const trackerSheets = SpreadsheetApp.openById(SHEETS_ID.TRACKER).getSheets();
-  
   const formResponse = e.response;
-  const itemResponses = formResponse.getItemResponses();
-  const name = itemResponses[0].getResponse();
-  const date = form.getDescription();
-
-  Logger.log(name); // Log name for error checking
-
-  // Get the last row with data in the sign-up sheet
-  const lastRow = signUpSheet.getLastRow();
   
-  // Check for resubmission or invalid date
-  const clinicDate = new Date(date);
-  if (isNaN(clinicDate.valueOf())) {
-    Logger.log(`Invalid date: ${date} for ${name}`);
-    return;
-  }
+  Logger.log(formResponse.getItemResponses()[0].getResponse()); // Log name for error checking
 
-  const usedNames = signUpSheet.getRange(2, SIGN_INDEX.NAME, lastRow - 1).getValues();
-  const usedDates = signUpSheet.getRange(2, SIGN_INDEX.DATE, lastRow - 1).getValues();
+  // Extract clinic info from form description
+  const date = form.getDescription();
+  
+  // Get submitted name and find corresponding row in tracker
+  const name = formResponse.getItemResponses()[0].getResponse();
+  const nameArr = findCellByName(name);
+
+  // Check for duplicate submissions
+  const lastRow = signSheet.getLastRow();
+  const usedNames = signSheet.getRange(2, SIGN_INDEX.NAME, lastRow - 1, 1).getValues();
+  const usedDates = signSheet.getRange(2, SIGN_INDEX.DATE, lastRow - 1, 1).getValues();
 
   for (let i = 0; i < lastRow - 2; i++) {
-    if (name === usedNames[i][0] && clinicDate.valueOf() === usedDates[i][0].valueOf()) {
-      Logger.log(`Resubmission detected for ${name}`);
+    if (name === usedNames[i][0] && new Date(date).valueOf() === usedDates[i][0].valueOf()) {
+      Logger.log(`${name}: Form resubmission`);
       return;
     }
   }
 
-  // Set the date to the date of the clinic
-  signUpSheet.getRange(lastRow + 1, SIGN_INDEX.DATE).setValue(date);
-
-  // Update the sign-up counter in the tracker
-  const nameArr = findCellByName(name);
-  if (!nameArr) {
-    Logger.log(`Could not find ${name} in tracker sheets`); 
+  if (isNaN(new Date(date).valueOf())) {
+    Logger.log(`${name}: ${date} - Bad date`);
     return;
   }
 
-  const [sheetIndex, rowIndex] = nameArr;
-  const cell = trackerSheets[sheetIndex].getRange(rowIndex, TRACK_INDEX.SIGNUPS);
-  const currentValue = cell.getValue() || 0;
-  
+  // Update sign-up sheet
+  signSheet.getRange(lastRow, SIGN_INDEX.DATE).setValue(date);
+
+  // Update sign-up counter in tracker
+  const trackerSheet = trackerSheets[nameArr[0]];
+  const signupsCell = trackerSheet.getRange(nameArr[1], TRACK_INDEX.SIGNUPS);
+  const currentSignups = signupsCell.getValue() || 0;
+
   if (!DEBUG) {
-    cell.setValue(currentValue + 1);
+    signupsCell.setValue(currentSignups + 1);
   } else {
-    Logger.log(`DEBUG: Would update TRACKER sheet for ${name}: Signups incremented from ${currentValue} to ${currentValue + 1}`);
+    Logger.log(`DEBUG: Would update TRACKER sheet for ${name}: Signups = ${currentSignups + 1}`);
   }
 }

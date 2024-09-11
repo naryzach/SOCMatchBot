@@ -61,22 +61,24 @@ function discontinueTriggers() {
 function onFormSubmit(e) {
   const form = FormApp.getActiveForm();
   const sheet = SpreadsheetApp.openById(SHEET_SIGN_ID).getSheets()[0];
-  const formResponse = e.response;
-  const name = formResponse.getItemResponses()[0].getResponse();
   
-  Logger.log(name); // Log name for error checking
+  const formResponse = e.response;
+  Logger.log(formResponse.getItemResponses()[0].getResponse()); // Log name for error checking
 
   const date = form.getDescription().split(";")[0];
   const lastRow = sheet.getLastRow();
   
-  const usedNames = sheet.getRange(2, SIGN_INDEX.NAME, lastRow - 1, 1).getValues().flat();
-  const usedDates = sheet.getRange(2, SIGN_INDEX.DATE, lastRow - 1, 1).getValues().flat();
+  const name = formResponse.getItemResponses()[0].getResponse();
 
-  for (let i = 0; i < lastRow - 1; i++) {
-    if (name === usedNames[i] && new Date(date).valueOf() === usedDates[i].valueOf()) {
-      Logger.log("Found sign up");
-      const cell = sheet.getRange(i + 2, SIGN_INDEX.NAME);
-      cell.setValue(cell.getValue().endsWith("CXL") ? name.slice(0, -3) : name + "CXL");
+  // Check for existing entries and toggle cancellation status
+  const range = sheet.getRange(2, SIGN_INDEX.NAME, lastRow - 1, SIGN_INDEX.DATE + 1);
+  const values = range.getValues();
+  
+  for (let i = 0; i < values.length; i++) {
+    if (name === values[i][0] && new Date(date).valueOf() === values[i][SIGN_INDEX.DATE-2].valueOf()) {
+      Logger.log(`Found sign up for ${name}`);
+      const newName = name.slice(-3) !== "CXL" ? name + "CXL" : name.slice(0, -3);
+      sheet.getRange(i + 2, SIGN_INDEX.NAME).setValue(newName);
       break;
     }
   }
@@ -90,24 +92,27 @@ function onFormSubmit(e) {
  */
 function updateNames() {
   const form = FormApp.getActiveForm();
-  const formMain = FormApp.openById(FORM_MAIN_ID);
-  const sheetSign = SpreadsheetApp.openById(SHEET_SIGN_ID).getSheets()[0];
+  const form_main = FormApp.openById(FORM_MAIN_ID);
+  const sheet_sign = SpreadsheetApp.openById(SHEET_SIGN_ID).getSheets()[0];
 
-  const date = formMain.getDescription().split(";")[0];
-  form.setDescription(formMain.getDescription());
+  const descr = form_main.getDescription();
+  const date = descr.split(";")[0];
+  
+  form.setDescription(descr);
 
-  const lastRow = sheetSign.getLastRow();
-  const signDates = sheetSign.getRange(2, SIGN_INDEX.DATE, lastRow - 1, 1).getValues().flat();
-  const signNames = sheetSign.getRange(2, SIGN_INDEX.NAME, lastRow - 1, 1).getValues().flat();
+  // Gather names of signups for current dated clinic
+  const lastRow = sheet_sign.getLastRow();
+  const range = sheet_sign.getRange(2, SIGN_INDEX.NAME, lastRow - 1, SIGN_INDEX.DATE + 1);
+  const values = range.getValues();
 
-  const currentDateValue = new Date(date).valueOf();
-  const largeNameList = signDates.reduce((acc, dateValue, index) => {
-    if (new Date(dateValue).valueOf() === currentDateValue) {
-      acc.push(signNames[index]);
-    }
-    return acc;
-  }, []);
+  const largeNameList = values
+    .filter(row => new Date(date).valueOf() === row[SIGN_INDEX.DATE-2].valueOf())
+    .map(row => row[0]);
 
   const namesList = form.getItemById(NAMES_ITEM_ID).asListItem();
+
+  Logger.log(largeNameList)
+
+  // Set name options, defaulting to ["None"] if empty
   namesList.setChoiceValues(largeNameList.length > 0 ? largeNameList : ["None"]);
 }
