@@ -372,7 +372,7 @@ return actuallyMatched;
 * The function handles both DEBUG and normal operation modes, logging actions instead of 
 * making changes in DEBUG mode.
 */
-function updateMatchStats(actuallyMatched, clinicInfo, date) {
+function updateMatchStats(matchList, actuallyMatched, clinicInfo, date) {
 const sheetsTrack = SpreadsheetApp.openById(SHEETS_ID.TRACKER).getSheets();
 const sheetSign = SpreadsheetApp.openById(SHEETS_ID.SIGN).getSheets()[0];
 
@@ -428,6 +428,7 @@ htmlBody.time = clinicInfo.time;
 htmlBody.link = linkMatch;
 htmlBody.link_track = linkTrack;
 htmlBody.sign_up_notes = managerEmailBody;
+htmlBody.match_list_str = matchList.join(" ; ");
 
 MailApp.sendEmail({
   to: DEBUG ? GET_INFO("Webmaster", "email") : `${GET_INFO("ROCManager", "email")},${GET_INFO("DIMEManager", "email")},${GET_INFO("LayCouns", "email")}`,

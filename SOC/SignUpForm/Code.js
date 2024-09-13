@@ -241,10 +241,11 @@ function updateMatchList(date, type, numRooms) {
   const matchList = generateMatchList(date, numRooms);
 
   // Setup match list
-  const actuallyMatched = setupMatchList(matchList, clinicTime, clinicInfo, date, numRooms);
+  const copyMatchList = [...matchList]
+  const actuallyMatched = setupMatchList(copyMatchList, clinicTime, clinicInfo, date, numRooms);
   
   // Update match stats
-  updateMatchStats(actuallyMatched, clinicInfo, date);
+  updateMatchStats(matchList, actuallyMatched, clinicInfo, date);
 }
 
 /**

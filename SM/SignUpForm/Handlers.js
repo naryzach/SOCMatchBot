@@ -330,6 +330,7 @@ function updateMatchStats(actuallyMatched, date) {
   htmlBody.link = linkMatch;
   htmlBody.link_track = linkTrack;
   htmlBody.sign_up_notes = managerEmailBody;
+  htmlBody.match_list_str = matchList.join(" ; ");
 
   const emailHtml = htmlBody.evaluate().getContent();
   MailApp.sendEmail({

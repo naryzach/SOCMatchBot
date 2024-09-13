@@ -199,10 +199,11 @@ function updateMatchList(date, numRooms) {
   const matchList = generateMatchList(date, numRooms);
 
   // setup match list
-  const actuallyMatched = setupMatchList(matchList, clinicTime, clinicInfo, date, numRooms);
+  const copyMatchList = [...matchList]
+  const actuallyMatched = setupMatchList(copyMatchList, clinicTime, clinicInfo, date, numRooms);
 
   // Update match stats and prepare manager email body
-  updateMatchStats(actuallyMatched, date);
+  updateMatchStats(matchList, actuallyMatched, date);
 }
 
 /**
