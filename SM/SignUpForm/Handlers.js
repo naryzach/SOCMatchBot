@@ -286,7 +286,7 @@ function setupMatchList(matchList, clinicTime, clinicInfo, date, numRooms) {
 * The function handles both DEBUG and normal operation modes, logging actions instead of 
 * making changes in DEBUG mode.
 */
-function updateMatchStats(actuallyMatched, date) {
+function updateMatchStats(matchList, actuallyMatched, date) {
   const sheetsTrack = SpreadsheetApp.openById(SHEETS_ID.TRACKER).getSheets();
   const sheetSign = SpreadsheetApp.openById(SHEETS_ID.SIGN).getSheets()[0];
 
