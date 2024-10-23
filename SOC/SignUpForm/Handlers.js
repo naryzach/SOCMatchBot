@@ -427,7 +427,7 @@ function setupMatchList(matchList, clinicTime, clinicInfo, date, num_rooms) {
   // Add volunteer spaces
   for (let i = 0; i < numSlots; i++) {
     const prevName = sheetMatch.getRange(i + MATCH_INDEX.NAMES, 2).getValue();
-    sheetMatch.getRange(i + MATCH_INDEX.NAMES, 2).setValue(`${prevName}\nVolunteer: `);
+    sheetMatch.getRange(i + MATCH_INDEX.NAMES, 2).setValue(`${prevName}\nVolunteer: _____________`);
   }
 
   // Add DIME Manager slot
